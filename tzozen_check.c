@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "json.h"
+#include "tzozen.h"
 
 #define MEMORY_CAPACITY (10 * 1000 * 1000)
 

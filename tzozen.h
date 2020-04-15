@@ -1,10 +1,340 @@
-#define _POSIX_C_SOURCE 200809L
+#ifndef TZOZEN_H_
+#define TZOZEN_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "json.h"
-#include "utf8.h"
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include <ctype.h>
+
+#define KILO 1024
+#define MEGA (1024 * KILO)
+#define GIGA (1024 * MEGA)
+
+// TODO: https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+
+typedef struct {
+    size_t capacity;
+    size_t size;
+    uint8_t *buffer;
+} Memory;
+
+// TODO: port https://github.com/tsoding/skedudle/pull/74 when it's merged
+
+static inline
+void *memory_alloc(Memory *memory, size_t size)
+{
+    assert(memory);
+    assert(memory->size + size <= memory->capacity);
+
+    void *result = memory->buffer + memory->size;
+    memory->size += size;
+
+    return result;
+}
+
+static inline
+void memory_clean(Memory *memory)
+{
+    assert(memory);
+    memory->size = 0;
+}
+
+typedef struct  {
+    size_t len;
+    const char *data;
+} String;
+
+static inline
+String string(size_t len, const char *data)
+{
+    String result = {
+        .len = len,
+        .data = data
+    };
+
+    return result;
+}
+
+static inline
+String cstr_as_string(const char *cstr)
+{
+    return string(strlen(cstr), cstr);
+}
+
+static inline
+const char *string_as_cstr(Memory *memory, String s)
+{
+    assert(memory);
+    char *cstr = memory_alloc(memory, s.len + 1);
+    memcpy(cstr, s.data, s.len);
+    cstr[s.len] = '\0';
+    return cstr;
+}
+
+#define SLT(literal) string(sizeof(literal) - 1, literal)
+
+static inline
+String string_empty(void)
+{
+    String result = {
+        .len = 0,
+        .data = NULL
+    };
+    return result;
+}
+
+static inline
+String chop_until_char(String *input, char delim)
+{
+    if (input->len == 0) {
+        return string_empty();
+    }
+
+    size_t i = 0;
+    while (i < input->len && input->data[i] != delim)
+        ++i;
+
+    String line;
+    line.data = input->data;
+    line.len = i;
+
+    if (i == input->len) {
+        input->data += input->len;
+        input->len = 0;
+    } else {
+        input->data += i + 1;
+        input->len -= i + 1;
+    }
+
+    return line;
+}
+
+static inline
+String chop_line(String *input) {
+    return chop_until_char(input, '\n');
+}
+
+static inline
+String trim_begin(String s)
+{
+    while (s.len && isspace(*s.data)) {
+        s.data++;
+        s.len--;
+    }
+    return s;
+}
+
+static inline
+String trim_end(String s)
+{
+    while (s.len && isspace(s.data[s.len - 1])) {
+        s.len--;
+    }
+    return s;
+}
+
+static inline
+String trim(String s)
+{
+    return trim_begin(trim_end(s));
+}
+
+static inline
+String chop_word(String *input)
+{
+    if (input->len == 0) {
+        return string_empty();
+    }
+
+    *input = trim_begin(*input);
+
+    size_t i = 0;
+    while (i < input->len && !isspace(input->data[i])) {
+        ++i;
+    }
+
+    String word;
+    word.data = input->data;
+    word.len = i;
+
+    input->data += i;
+    input->len -= i;
+
+    return word;
+}
+
+static inline
+int string_equal(String a, String b)
+{
+    if (a.len != b.len) return 0;
+    return memcmp(a.data, b.data, a.len) == 0;
+}
+
+static inline
+String take(String s, size_t n)
+{
+    if (s.len < n) return s;
+    return (String) {
+        .len = n,
+        .data = s.data
+    };
+}
+
+static inline
+String drop(String s, size_t n)
+{
+    if (s.len < n) return SLT("");
+    return (String) {
+        .len = s.len - n,
+        .data = s.data + n
+    };
+}
+
+static inline
+int prefix_of(String prefix, String s)
+{
+    return string_equal(prefix, take(s, prefix.len));
+}
+
+static inline
+void chop(String *s, size_t n)
+{
+    *s = drop(*s, n);
+}
+
+static inline
+String concat3(Memory *memory, String a, String b, String c)
+{
+    const size_t n = a.len + b.len + c.len;
+    char *buffer = memory_alloc(memory, n);
+    memcpy(buffer, a.data, a.len);
+    memcpy(buffer + a.len, b.data, b.len);
+    memcpy(buffer + a.len + b.len, c.data, c.len);
+    return (String) { .len = n, .data = buffer };
+}
+
+#define JSON_DEPTH_MAX_LIMIT 100
+
+typedef enum {
+    JSON_NULL = 0,
+    JSON_BOOLEAN,
+    JSON_NUMBER,
+    JSON_STRING,
+    JSON_ARRAY,
+    JSON_OBJECT
+} Json_Type;
+
+static inline
+const char *json_type_as_cstr(Json_Type type)
+{
+    switch (type) {
+    case JSON_NULL: return "JSON_NULL";
+    case JSON_BOOLEAN: return "JSON_BOOLEAN";
+    case JSON_NUMBER: return "JSON_NUMBER";
+    case JSON_STRING: return "JSON_STRING";
+    case JSON_ARRAY: return "JSON_ARRAY";
+    case JSON_OBJECT: return "JSON_OBJECT";
+    }
+
+    assert(!"Incorrect Json_Type");
+}
+
+typedef struct Json_Value Json_Value;
+
+#define JSON_ARRAY_PAGE_CAPACITY 128
+
+typedef struct Json_Array_Page Json_Array_Page;
+
+typedef struct {
+    Json_Array_Page *begin;
+    Json_Array_Page *end;
+} Json_Array;
+
+void json_array_push(Memory *memory, Json_Array *array, Json_Value value);
+
+typedef struct Json_Object_Page Json_Object_Page;
+
+typedef struct {
+    Json_Object_Page *begin;
+    Json_Object_Page *end;
+} Json_Object;
+
+typedef struct {
+    // TODO(#26): because of the use of String-s Json_Number can hold an incorrect value
+    //   But you can only get an incorrect Json_Number if you construct it yourself.
+    //   Anything coming from parse_json_value should be always a correct number.
+    String integer;
+    String fraction;
+    String exponent;
+} Json_Number;
+
+int64_t json_number_to_integer(Json_Number number);
+
+struct Json_Value {
+    Json_Type type;
+    union
+    {
+        int boolean;
+        Json_Number number;
+        String string;
+        Json_Array array;
+        Json_Object object;
+    };
+};
+
+struct Json_Array_Page {
+    Json_Array_Page *next;
+    size_t size;
+    Json_Value elements[JSON_ARRAY_PAGE_CAPACITY];
+};
+
+static inline
+size_t json_array_size(Json_Array array)
+{
+    size_t size = 0;
+    for (Json_Array_Page *page = array.begin;
+         page != NULL;
+         page = page->next)
+    {
+        size += page->size;
+    }
+    return size;
+}
+
+typedef struct {
+    Json_Value value;
+    String rest;
+    int is_error;
+    const char *message;
+} Json_Result;
+
+typedef struct {
+    String key;
+    Json_Value value;
+} Json_Object_Member;
+
+#define JSON_OBJECT_PAGE_CAPACITY 128
+
+extern Json_Value json_null;
+extern Json_Value json_true;
+extern Json_Value json_false;
+
+Json_Value json_string(String string);
+
+struct Json_Object_Page {
+    Json_Object_Page *next;
+    size_t size;
+    Json_Object_Member elements[JSON_OBJECT_PAGE_CAPACITY];
+};
+
+void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value);
+
+// TODO(#40): parse_json_value is not aware of input encoding
+Json_Result parse_json_value(Memory *memory, String source);
+void print_json_error(FILE *stream, Json_Result result, String source, const char *prefix);
+void print_json_value(FILE *stream, Json_Value value);
+void print_json_value_fd(int fd, Json_Value value);
+
 
 Json_Value json_null = { .type = JSON_NULL };
 Json_Value json_true = { .type = JSON_BOOLEAN, .boolean = 1 };
@@ -308,6 +638,55 @@ static int32_t unhex(char x)
     }
 
     return -1;
+}
+
+#define UTF8_CHUNK_CAPACITY 4
+
+typedef struct {
+    size_t size;
+    uint8_t buffer[UTF8_CHUNK_CAPACITY];
+} Utf8_Chunk;
+
+Utf8_Chunk utf8_encode_rune(uint32_t rune)
+{
+    const uint8_t b00000111 = (1 << 3) - 1;
+    const uint8_t b00001111 = (1 << 4) - 1;
+    const uint8_t b00011111 = (1 << 5) - 1;
+    const uint8_t b00111111 = (1 << 6) - 1;
+    const uint8_t b10000000 = ~((1 << 7) - 1);
+    const uint8_t b11000000 = ~((1 << 6) - 1);
+    const uint8_t b11100000 = ~((1 << 5) - 1);
+    const uint8_t b11110000 = ~((1 << 4) - 1);
+
+    if (rune <= 0x007F) {
+        return (Utf8_Chunk) {
+            .size = 1,
+            .buffer = {rune}
+        };
+    } else if (0x0080 <= rune && rune <= 0x07FF) {
+        return (Utf8_Chunk) {
+            .size = 2,
+            .buffer = {((rune >> 6) & b00011111) | b11000000,
+                       (rune        & b00111111) | b10000000}
+        };
+    } else if (0x0800 <= rune && rune <= 0xFFFF) {
+        return (Utf8_Chunk){
+            .size = 3,
+            .buffer = {((rune >> 12) & b00001111) | b11100000,
+                       ((rune >> 6)  & b00111111) | b10000000,
+                       (rune         & b00111111) | b10000000}
+        };
+    } else if (0x10000 <= rune && rune <= 0x10FFFF) {
+        return (Utf8_Chunk){
+            .size = 4,
+            .buffer = {((rune >> 18) & b00000111) | b11110000,
+                       ((rune >> 12) & b00111111) | b10000000,
+                       ((rune >> 6)  & b00111111) | b10000000,
+                       (rune         & b00111111) | b10000000}
+        };
+    } else {
+        return (Utf8_Chunk){0};
+    }
 }
 
 static Json_Result parse_escape_sequence(Memory *memory, String source)
@@ -888,128 +1267,4 @@ void print_json_error(FILE *stream, Json_Result result,
     }
 }
 
-static
-void print_json_number_fd(int fd, Json_Number number)
-{
-    write(fd, number.integer.data, number.integer.len);
-
-    if (number.fraction.len > 0) {
-        write(fd, ".", 1);
-        write(fd, number.fraction.data, number.fraction.len);
-    }
-
-    if (number.exponent.len > 0) {
-        write(fd, "e", 1);
-        write(fd, number.exponent.data, number.exponent.len);
-    }
-}
-
-static
-void print_json_string_fd(int fd, String string)
-{
-    const char *hex_digits = "0123456789abcdef";
-    const char *specials = "btnvfr";
-    const char *p = string.data;
-
-    write(fd, "\"", 1);
-    size_t cl;
-    for (size_t i = 0; i < string.len; i++) {
-        unsigned char ch = ((unsigned char *) p)[i];
-        if (ch == '"' || ch == '\\') {
-            write(fd, "\\", 1);
-            write(fd, p + i, 1);
-        } else if (ch >= '\b' && ch <= '\r') {
-            write(fd, "\\", 1);
-            write(fd, &specials[ch - '\b'], 1);
-        } else if (isprint(ch)) {
-            write(fd, p + i, 1);
-        } else if ((cl = json_get_utf8_char_len(ch)) == 1) {
-            write(fd, "\\u00", 4);
-            write(fd, &hex_digits[(ch >> 4) % 0xf], 1);
-            write(fd, &hex_digits[ch % 0xf], 1);
-        } else {
-            write(fd, p + i, cl);
-            i += cl - 1;
-        }
-    }
-    write(fd, "\"", 1);
-}
-
-static
-void print_json_array_fd(int fd, Json_Array array)
-{
-    dprintf(fd, "[");
-    int t = 0;
-    for (Json_Array_Page *page = array.begin; page != NULL; page = page->next) {
-        for (size_t i = 0; i < page->size; ++i) {
-            if (t) {
-                dprintf(fd, ",");
-            } else {
-                t = 1;
-            }
-            print_json_value_fd(fd, page->elements[i]);
-        }
-    }
-    dprintf(fd, "]");
-}
-
-void print_json_object_fd(int fd, Json_Object object)
-{
-    dprintf(fd, "{");
-    int t = 0;
-    for (Json_Object_Page *page = object.begin; page != NULL; page = page->next) {
-        for (size_t i = 0; i < page->size; ++i) {
-            if (t) {
-                dprintf(fd, ",");
-            } else {
-                t = 1;
-            }
-            print_json_string_fd(fd, page->elements[i].key);
-            dprintf(fd, ":");
-            print_json_value_fd(fd, page->elements[i].value);
-        }
-    }
-    dprintf(fd, "}");
-}
-
-void print_json_value_fd(int fd, Json_Value value)
-{
-    switch (value.type) {
-    case JSON_NULL: {
-        dprintf(fd, "null");
-    } break;
-    case JSON_BOOLEAN: {
-        dprintf(fd, value.boolean ? "true" : "false");
-    } break;
-    case JSON_NUMBER: {
-        print_json_number_fd(fd, value.number);
-    } break;
-    case JSON_STRING: {
-        print_json_string_fd(fd, value.string);
-    } break;
-    case JSON_ARRAY: {
-        print_json_array_fd(fd, value.array);
-    } break;
-    case JSON_OBJECT: {
-        print_json_object_fd(fd, value.object);
-    } break;
-    }
-}
-
-Json_Ator mtor = {
-    .alloc = mtor_alloc,
-    .free = mtor_free
-};
-
-void *mtor_alloc(void *data, size_t size)
-{
-    (void) data;
-    return malloc(size);
-}
-
-void mtor_free(void *data, void *ptr, size_t size)
-{
-    (void) data;
-    (void) size;
-    free(ptr);
-}
+#endif  // TZOZEN_H_

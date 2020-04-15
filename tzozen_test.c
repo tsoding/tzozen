@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "json.h"
+#include "tzozen.h"
 
 #define MEMORY_CAPACITY (640 * 1000)
 
