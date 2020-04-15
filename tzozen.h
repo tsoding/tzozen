@@ -11,6 +11,7 @@
 #define MEGA (1024 * KILO)
 #define GIGA (1024 * MEGA)
 
+// TODO: consider getting rid of designated initializers to be more compatible with C++
 // TODO: https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
 
 typedef struct {
@@ -66,7 +67,7 @@ static inline
 const char *string_as_cstr(Memory *memory, String s)
 {
     assert(memory);
-    char *cstr = memory_alloc(memory, s.len + 1);
+    char *cstr = (char *) memory_alloc(memory, s.len + 1);
     memcpy(cstr, s.data, s.len);
     cstr[s.len] = '\0';
     return cstr;
@@ -207,7 +208,7 @@ static inline
 String concat3(Memory *memory, String a, String b, String c)
 {
     const size_t n = a.len + b.len + c.len;
-    char *buffer = memory_alloc(memory, n);
+    char *buffer = (char *)memory_alloc(memory, n);
     memcpy(buffer, a.data, a.len);
     memcpy(buffer + a.len, b.data, b.len);
     memcpy(buffer + a.len + b.len, c.data, c.len);
@@ -373,13 +374,13 @@ void json_array_push(Memory *memory, Json_Array *array, Json_Value value)
 
     if (array->begin == NULL) {
         assert(array->end == NULL);
-        array->begin = memory_alloc(memory, sizeof(Json_Array_Page));
+        array->begin = (Json_Array_Page *) memory_alloc(memory, sizeof(Json_Array_Page));
         array->end = array->begin;
         memset(array->begin, 0, sizeof(Json_Array_Page));
     }
 
     if (array->end->size >= JSON_ARRAY_PAGE_CAPACITY) {
-        Json_Array_Page *next = memory_alloc(memory, sizeof(Json_Array_Page));
+        Json_Array_Page *next = (Json_Array_Page *) memory_alloc(memory, sizeof(Json_Array_Page));
         memset(next, 0, sizeof(Json_Array_Page));
         array->end->next = next;
         array->end = next;
@@ -397,13 +398,13 @@ void json_object_push(Memory *memory, Json_Object *object, String key, Json_Valu
 
     if (object->begin == NULL) {
         assert(object->end == NULL);
-        object->begin = memory_alloc(memory, sizeof(Json_Object_Page));
+        object->begin = (Json_Object_Page *) memory_alloc(memory, sizeof(Json_Object_Page));
         object->end = object->begin;
         memset(object->begin, 0, sizeof(Json_Object_Page));
     }
 
     if (object->end->size >= JSON_OBJECT_PAGE_CAPACITY) {
-        Json_Object_Page *next = memory_alloc(memory, sizeof(Json_Object_Page));
+        Json_Object_Page *next = (Json_Object_Page *) memory_alloc(memory, sizeof(Json_Object_Page));
         memset(next, 0, sizeof(Json_Object_Page));
         object->end->next = next;
         object->end = next;
@@ -475,15 +476,15 @@ static Json_Result parse_token(String source, String token,
 {
     if (string_equal(take(source, token.len), token)) {
         return (Json_Result) {
-            .rest = drop(source, token.len),
-            .value = value
+            .value = value,
+            .rest = drop(source, token.len)
         };
     }
 
     return (Json_Result) {
+        .rest = source,
         .is_error = 1,
         .message = message,
-        .rest = source
     };
 }
 
@@ -511,8 +512,8 @@ static Json_Result parse_json_number(String source)
         || (integer.len > 1 && *integer.data == '0')
         || (integer.len > 2 && prefix_of(SLT("-0"), integer))) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Incorrect number literal"
         };
     }
@@ -528,8 +529,8 @@ static Json_Result parse_json_number(String source)
 
         if (fraction.len == 0) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Incorrect number literal"
             };
         }
@@ -554,8 +555,8 @@ static Json_Result parse_json_number(String source)
             string_equal(exponent, SLT("-")) ||
             string_equal(exponent, SLT("+"))) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Incorrect number literal"
             };
         }
@@ -578,8 +579,8 @@ static Json_Result parse_json_string_literal(String source)
 {
     if (source.len == 0 || *source.data != '"') {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '\"'",
         };
     }
@@ -587,8 +588,8 @@ static Json_Result parse_json_string_literal(String source)
     chop(&source, 1);
 
     String s = {
+        .len = 0,
         .data = source.data,
-        .len = 0
     };
 
     while (source.len && *source.data != '"') {
@@ -598,8 +599,8 @@ static Json_Result parse_json_string_literal(String source)
 
             if (source.len == 0) {
                 return (Json_Result) {
-                    .is_error = 1,
                     .rest = source,
+                    .is_error = 1,
                     .message = "Unfinished escape sequence",
                 };
             }
@@ -611,8 +612,8 @@ static Json_Result parse_json_string_literal(String source)
 
     if (source.len == 0) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '\"'",
         };
     }
@@ -662,28 +663,28 @@ Utf8_Chunk utf8_encode_rune(uint32_t rune)
     if (rune <= 0x007F) {
         return (Utf8_Chunk) {
             .size = 1,
-            .buffer = {rune}
+            .buffer = {(uint8_t) rune}
         };
     } else if (0x0080 <= rune && rune <= 0x07FF) {
         return (Utf8_Chunk) {
             .size = 2,
-            .buffer = {((rune >> 6) & b00011111) | b11000000,
-                       (rune        & b00111111) | b10000000}
+            .buffer = {(uint8_t) (((rune >> 6) & b00011111) | b11000000),
+                       (uint8_t) ((rune        & b00111111) | b10000000)}
         };
     } else if (0x0800 <= rune && rune <= 0xFFFF) {
         return (Utf8_Chunk){
             .size = 3,
-            .buffer = {((rune >> 12) & b00001111) | b11100000,
-                       ((rune >> 6)  & b00111111) | b10000000,
-                       (rune         & b00111111) | b10000000}
+            .buffer = {(uint8_t) (((rune >> 12) & b00001111) | b11100000),
+                       (uint8_t) (((rune >> 6)  & b00111111) | b10000000),
+                       (uint8_t) ((rune         & b00111111) | b10000000)}
         };
     } else if (0x10000 <= rune && rune <= 0x10FFFF) {
         return (Utf8_Chunk){
             .size = 4,
-            .buffer = {((rune >> 18) & b00000111) | b11110000,
-                       ((rune >> 12) & b00111111) | b10000000,
-                       ((rune >> 6)  & b00111111) | b10000000,
-                       (rune         & b00111111) | b10000000}
+            .buffer = {(uint8_t) (((rune >> 18) & b00000111) | b11110000),
+                       (uint8_t) (((rune >> 12) & b00111111) | b10000000),
+                       (uint8_t) (((rune >> 6)  & b00111111) | b10000000),
+                       (uint8_t) ((rune         & b00111111) | b10000000)}
         };
     } else {
         return (Utf8_Chunk){0};
@@ -707,8 +708,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
     if (source.len == 0 || *source.data != '\\') {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '\\'",
         };
     }
@@ -716,8 +717,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
     if (source.len <= 0) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Unfinished escape sequence",
         };
     }
@@ -725,22 +726,22 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
     for (size_t i = 0; i < unescape_map_size; ++i) {
         if (unescape_map[i][0] == *source.data) {
             return (Json_Result) {
-                .rest = drop(source, 1),
                 .value = {
                     .type = JSON_STRING,
                     .string = {
                         .len = 1,
                         .data = &unescape_map[i][1]
                     }
-                }
+                },
+                .rest = drop(source, 1),
             };
         }
     }
 
     if (*source.data != 'u') {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Unknown escape sequence"
         };
     }
@@ -748,8 +749,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
     if (source.len < 4) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Incomplete unicode point escape sequence"
         };
     }
@@ -759,8 +760,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
         int32_t x = unhex(*source.data);
         if (x < 0) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Incorrect hex digit"
             };
         }
@@ -771,16 +772,16 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
     if (0xD800 <= rune && rune <= 0xDBFF) {
         if (source.len < 6) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Unfinished surrogate pair"
             };
         }
 
         if (*source.data != '\\') {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Unfinished surrogate pair. Expected '\\'",
             };
         }
@@ -788,8 +789,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
         if (*source.data != 'u') {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Unfinished surrogate pair. Expected 'u'",
             };
         }
@@ -800,10 +801,10 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
             int32_t x = unhex(*source.data);
             if (x < 0) {
                 return (Json_Result) {
+                    .rest = source,
                     .is_error = 1,
-                        .rest = source,
-                        .message = "Incorrect hex digit"
-                        };
+                    .message = "Incorrect hex digit"
+                };
             }
             surrogate = surrogate * 0x10 + x;
             chop(&source, 1);
@@ -811,8 +812,8 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
         if (!(0xDC00 <= surrogate && surrogate <= 0xDFFF)) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Invalid surrogate pair"
             };
         }
@@ -827,7 +828,7 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
     Utf8_Chunk utf8_chunk = utf8_encode_rune(rune);
     assert(utf8_chunk.size > 0);
 
-    char *data = memory_alloc(memory, utf8_chunk.size);
+    char *data = (char *) memory_alloc(memory, utf8_chunk.size);
     memcpy(data, utf8_chunk.buffer, utf8_chunk.size);
 
     return (Json_Result){
@@ -852,7 +853,7 @@ static Json_Result parse_json_string(Memory *memory, String source)
     source = result.value.string;
     String rest = result.rest;
 
-    char *buffer = memory_alloc(memory, buffer_capacity);
+    char *buffer = (char *)memory_alloc(memory, buffer_capacity);
     size_t buffer_size = 0;
 
     while (source.len) {
@@ -879,11 +880,11 @@ static Json_Result parse_json_string(Memory *memory, String source)
         .value = {
             .type = JSON_STRING,
             .string = {
+                .len = buffer_size,
                 .data = buffer,
-                .len = buffer_size
             },
         },
-        .rest = rest
+        .rest = rest,
     };
 }
 
@@ -893,8 +894,8 @@ static Json_Result parse_json_array(Memory *memory, String source, int level)
 
     if(source.len == 0 || *source.data != '[') {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '['",
         };
     }
@@ -905,8 +906,8 @@ static Json_Result parse_json_array(Memory *memory, String source, int level)
 
     if (source.len == 0) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected ']'",
         };
     } else if(*source.data == ']') {
@@ -930,8 +931,8 @@ static Json_Result parse_json_array(Memory *memory, String source, int level)
 
         if (source.len == 0) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Expected ']' or ','",
             };
         }
@@ -948,8 +949,8 @@ static Json_Result parse_json_array(Memory *memory, String source, int level)
 
         if (*source.data != ',') {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Expected ']' or ','",
             };
         }
@@ -958,8 +959,8 @@ static Json_Result parse_json_array(Memory *memory, String source, int level)
     }
 
     return (Json_Result) {
-        .is_error = 1,
         .rest = source,
+        .is_error = 1,
         .message = "EOF",
     };
 }
@@ -970,8 +971,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
 
     if (source.len == 0 || *source.data != '{') {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '{'"
         };
     }
@@ -982,8 +983,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
 
     if (source.len == 0) {
         return (Json_Result) {
-            .is_error = 1,
             .rest = source,
+            .is_error = 1,
             .message = "Expected '}'"
         };
     } else if (*source.data == '}') {
@@ -1006,8 +1007,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
 
         if (source.len == 0 || *source.data != ':') {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Expected ':'"
             };
         }
@@ -1025,8 +1026,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
 
         if (source.len == 0) {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Expected '}' or ','",
             };
         }
@@ -1043,8 +1044,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
 
         if (*source.data != ',') {
             return (Json_Result) {
-                .is_error = 1,
                 .rest = source,
+                .is_error = 1,
                 .message = "Expected '}' or ','",
             };
         }
@@ -1053,8 +1054,8 @@ static Json_Result parse_json_object(Memory *memory, String source, int level)
     }
 
     return (Json_Result) {
-        .is_error = 1,
         .rest = source,
+        .is_error = 1,
         .message = "EOF",
     };
 }
@@ -1064,9 +1065,9 @@ Json_Result parse_json_value_impl(Memory *memory, String source, int level)
 {
     if (level >= JSON_DEPTH_MAX_LIMIT) {
         return (Json_Result) {
+            .rest = source,
             .is_error = 1,
             .message = "Reach the max limit of depth",
-            .rest = source
         };
     }
 
@@ -1074,9 +1075,9 @@ Json_Result parse_json_value_impl(Memory *memory, String source, int level)
 
     if (source.len == 0) {
         return (Json_Result) {
+            .rest = source,
             .is_error = 1,
             .message = "EOF",
-            .rest = source
         };
     }
 
@@ -1266,6 +1267,46 @@ void print_json_error(FILE *stream, Json_Result result,
         fwrite(line.data, 1, line.len, stream);
         fputc('\n', stream);
     }
+}
+
+#define FOR_OBJECT_JSON(element, object, body)              \
+    for (Json_Object_Page *element##_page = (object).begin; \
+         element##_page != NULL;                            \
+         element##_page = element##_page->next)             \
+    {                                                       \
+        for (size_t element##_index = 0;                    \
+             element##_index < element##_page->size;        \
+             element##_index++)                             \
+        {                                                   \
+            Json_Object_Member element =                    \
+                element##_page->elements[element##_index];  \
+            body                                            \
+        }                                                   \
+    }
+
+#define FOR_ARRAY_JSON(element, object, body)               \
+    for (Json_Array_Page *element##_page = (object).begin;  \
+         element##_page != NULL;                            \
+         element##_page = element##_page->next)             \
+    {                                                       \
+        for (size_t element##_index = 0;                    \
+             element##_index < element##_page->size;        \
+             element##_index++)                             \
+        {                                                   \
+            Json_Value element =                            \
+                element##_page->elements[element##_index];  \
+            body                                            \
+        }                                                   \
+    }
+
+Json_Value json_object_value_by_key(Json_Object object, String key)
+{
+    FOR_OBJECT_JSON(element, object, {
+        if (string_equal(element.key, key)) {
+            return element.value;
+        }
+    });
+    return json_null;
 }
 
 #endif  // TZOZEN_H_
