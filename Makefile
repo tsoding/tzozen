@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -Wextra
+CFLAGS=-Wall -Werror -Wextra -std=c11 -pedantic
 
 .PHONY: all
 all: tzozen_test tzozen_check example
