@@ -40,6 +40,7 @@ static Memory memory = {
         (ptr) = (void *) (base + offset); \
     } while(0)
 
+void json_value_relatify(Memory *memory, Json_Value *value);
 
 void string_relatify(Memory *memory, String *string)
 {
@@ -56,9 +57,16 @@ void json_number_relatify(Memory *memory, Json_Number *number)
 
 void json_array_page_relatify(Memory *memory, Json_Array_Page *page)
 {
-    (void) memory;
-    (void) page;
-    assert(0 && "TODO: json_array_page_relatify is not implemented");
+    if (page == NULL) return;
+
+    for (size_t i = 0; i < page->size; ++i) {
+        json_value_relatify(memory, page->elements + i);
+    }
+
+    if (page->next != NULL) {
+        json_array_page_relatify(memory, page->next);
+        RELATIFY_PTR(memory, page->next);
+    }
 }
 
 void json_array_relatify(Memory *memory, Json_Array *array)
@@ -204,7 +212,7 @@ int main()
 {
     //// Parsing //////////////////////////////
 
-    String input = SLT("12345");
+    String input = SLT("[1, 2, 3, 4]");
 
     printf("Parsing expression:\n\t%.*s\n", (int) input.len, input.data);
 
