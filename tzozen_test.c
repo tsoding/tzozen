@@ -3,6 +3,7 @@
 #include <errno.h>
 
 #define JSON_ARRAY_PAGE_CAPACITY 1
+#define JSON_OBJECT_PAGE_CAPACITY 1
 #include "tzozen.h"
 
 #define MEMORY_CAPACITY (640 * 1000)
@@ -69,10 +70,7 @@ void json_array_page_relatify(Memory *memory, Json_Array_Page *page)
         json_value_relatify(memory, page->elements + i);
     }
 
-    if (page->next != NULL) {
-        json_array_page_relatify(memory, page->next);
-    }
-
+    json_array_page_relatify(memory, page->next);
     RELATIFY_PTR(memory, page->next);
 }
 
@@ -83,11 +81,30 @@ void json_array_relatify(Memory *memory, Json_Array *array)
     RELATIFY_PTR(memory, array->end);
 }
 
+void json_object_member_relatify(Memory *memory,
+                                 Json_Object_Member *member)
+{
+    string_relatify(memory, &member->key);
+    json_value_relatify(memory, &member->value);
+}
+
+void json_object_page_relatify(Memory *memory, Json_Object_Page *page)
+{
+    if (page == NULL) return;
+
+    for (size_t i = 0; i < page->size; ++i) {
+        json_object_member_relatify(memory, page->elements + i);
+    }
+
+    json_object_page_relatify(memory, page->next);
+    RELATIFY_PTR(memory, page->next);
+}
+
 void json_object_relatify(Memory *memory, Json_Object *object)
 {
-    (void)memory;
-    (void)object;
-    assert(0 && "TODO: json_object_relatify is not implemented");
+    json_object_page_relatify(memory, object->begin);
+    RELATIFY_PTR(memory, object->begin);
+    RELATIFY_PTR(memory, object->end);
 }
 
 void json_value_relatify(Memory *memory, Json_Value *value)
@@ -224,7 +241,7 @@ int main()
 {
     //// Parsing //////////////////////////////
 
-    String input = SLT("[1, 2, 3, 4]");
+    String input = SLT("{\"numbers\": [1, 2, 3, 4]}");
 
     printf("Parsing expression:\n\t%.*s\n", (int) input.len, input.data);
 
