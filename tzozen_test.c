@@ -207,11 +207,29 @@ void json_array_unrelatify(Memory *memory, Json_Array *array)
     json_array_page_unrelatify(memory, array->begin);
 }
 
+void json_object_member_unrelatify(Memory *memory, Json_Object_Member *member)
+{
+    string_unrelatify(memory, &member->key);
+    json_value_unrelatify(memory, &member->value);
+}
+
+void json_object_page_unrelatify(Memory *memory, Json_Object_Page *page)
+{
+    while (page != NULL) {
+        for (size_t i = 0; i < page->size; ++i) {
+            json_object_member_unrelatify(memory, page->elements + i);
+        }
+
+        UNRELATIFY_PTR(memory, page->next);
+        page = page->next;
+   }
+}
+
 void json_object_unrelatify(Memory *memory, Json_Object *object)
 {
-    (void) memory;
-    (void) object;
-    assert(0 && "TODO: json_object_unrelatify is not implemented");
+    UNRELATIFY_PTR(memory, object->begin);
+    UNRELATIFY_PTR(memory, object->end);
+    json_object_page_unrelatify(memory, object->begin);
 }
 
 void json_value_unrelatify(Memory *memory, Json_Value *index)
