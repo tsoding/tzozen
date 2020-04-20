@@ -18,7 +18,7 @@ static Memory memory = {
 //
 // - 0xFFFFFFFFFFFFFFFF is the entire addressing capability of x86_64.
 // - If (memory)->size == 0xFFFFFFFFFFFFFFFF than `base` must be equal `a`
-//   (other wise you won't be able to address that much memory on x86_64)
+//   (otherwise we won't be able to address that much memory on x86_64)
 //   and implementation of `RELATIFY_PTR` works out correctly.
 // - `~0xFFFFFFFFFFFFFFFF == 0x0` makes it super easy to check with the
 //   relatified value is a NULL or not (as implemented in `UNRELATIFY_PTR`).
