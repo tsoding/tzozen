@@ -7,7 +7,7 @@
 #define JSON_OBJECT_PAGE_CAPACITY 1
 #include "./tzozen_dump.h"
 
-#define MEMORY_CAPACITY (2 * GIGA)
+#define MEMORY_CAPACITY (10 * MEGA)
 
 void usage(FILE *stream)
 {
