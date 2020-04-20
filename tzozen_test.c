@@ -12,32 +12,37 @@ static Memory memory = {
     .buffer = memory_buffer
 };
 
+// NOTE: We represent relative NULL with `-1` cast to (void*). Which on
+// x86_64 looks like 0xFFFFFFFFFFFFFFFF in memory.
+//
+// - 0xFFFFFFFFFFFFFFFF is the entire addressing capability of x86_64.
+// - If (memory)->size == 0xFFFFFFFFFFFFFFFF than `base` must be equal `a`
+//   (other wise you won't be able to address that much memory on x86_64)
+//   and implementation of `RELATIFY_PTR` works out correctly.
+// - `~0xFFFFFFFFFFFFFFFF == 0x0` makes it super easy to check with the
+//   relatified value is a NULL or not (as implemented in `UNRELATIFY_PTR`).
 #define RELATIFY_PTR(memory, ptr)                                       \
     do {                                                                \
         const char *base = (const char *) (memory)->buffer;             \
         const char *a = (const char *) (ptr);                           \
-        if (!(base <= a)) {                                             \
-            fprintf(stderr, "%s:%d: Assertion `base <= a` failed\n",    \
-                    __FILE__, __LINE__);                                \
-            fprintf(stderr, "\tbase\t=\t%p\n", base);                   \
-            fprintf(stderr, "\ta\t=\t%p\n", a);                         \
-            abort();                                                    \
+        if (base <= a) {                                                \
+            (ptr) = (void *) (a - base);                                \
+        } else {                                                        \
+            assert(a == NULL);                                          \
+            (ptr) = (void*) (-1);                                       \
         }                                                               \
-        (ptr) = (void *) (a - base);                                    \
     } while(0)
 
 #define UNRELATIFY_PTR(memory, ptr)                                     \
     do {                                                                \
         const char *base = (const char *) (memory)->buffer;             \
         size_t offset = (size_t) (ptr);                                 \
-        if (!(offset < (memory)->size)) {                               \
-            fprintf(stderr, "%s:%d: Assertion `offset < (memory)->size` failed\n", \
-                    __FILE__, __LINE__);                                \
-            fprintf(stderr, "\toffset\t=\t%ld\n", offset);              \
-            fprintf(stderr, "\t(memory)->size\t=\t%ld\n", (memory)->size); \
-            abort();                                                    \
+        if (~offset) {                                                  \
+            assert(offset <= (memory)->size);                           \
+            (ptr) = (void *) (base + offset);                           \
+        } else {                                                        \
+            (ptr) = NULL;                                               \
         }                                                               \
-        (ptr) = (void *) (base + offset); \
     } while(0)
 
 void json_value_relatify(Memory *memory, Json_Value *value);
@@ -63,14 +68,11 @@ void json_array_page_relatify(Memory *memory, Json_Array_Page *page)
         json_value_relatify(memory, page->elements + i);
     }
 
-    // TODO: How do we represent NULL? It could be just a 0 offset from the memory base...
-    //  - Technically this `(ptr) = (void *) (a - base)` (taken from RELATIFY_PTR) will result in a negative value.
-    //    - `base + a` with such value does not restore the original pointer
-    //      - Maybe we should indicate NULL with -1?
     if (page->next != NULL) {
         json_array_page_relatify(memory, page->next);
-        RELATIFY_PTR(memory, page->next);
     }
+
+    RELATIFY_PTR(memory, page->next);
 }
 
 void json_array_relatify(Memory *memory, Json_Array *array)
