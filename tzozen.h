@@ -7,9 +7,9 @@
 #include <string.h>
 #include <ctype.h>
 
-#define KILO 1024
-#define MEGA (1024 * KILO)
-#define GIGA (1024 * MEGA)
+#define KILO 1024LL
+#define MEGA (1024LL * KILO)
+#define GIGA (1024LL * MEGA)
 
 // TODO: consider getting rid of designated initializers to be more compatible with C++
 // TODO: https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
