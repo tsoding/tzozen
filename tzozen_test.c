@@ -64,6 +64,9 @@ void json_array_page_relatify(Memory *memory, Json_Array_Page *page)
     }
 
     // TODO: How do we represent NULL? It could be just a 0 offset from the memory base...
+    //  - Technically this `(ptr) = (void *) (a - base)` (taken from RELATIFY_PTR) will result in a negative value.
+    //    - `base + a` with such value does not restore the original pointer
+    //      - Maybe we should indicate NULL with -1?
     if (page->next != NULL) {
         json_array_page_relatify(memory, page->next);
         RELATIFY_PTR(memory, page->next);
