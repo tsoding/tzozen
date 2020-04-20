@@ -46,6 +46,7 @@ static Memory memory = {
     } while(0)
 
 void json_value_relatify(Memory *memory, Json_Value *value);
+void json_value_unrelatify(Memory *memory, Json_Value *index);
 
 void string_relatify(Memory *memory, String *string)
 {
@@ -172,16 +173,21 @@ void json_number_unrelatify(Memory *memory, Json_Number *number)
 
 void json_array_page_unrelatify(Memory *memory, Json_Array_Page *page)
 {
-    (void) memory;
-    (void) page;
-    assert(0 && "TODO: json_array_page_unrelatify is not implemented");
+    while (page != NULL) {
+        for (size_t i = 0; i < page->size; ++i) {
+            json_value_unrelatify(memory, page->elements + i);
+        }
+
+        UNRELATIFY_PTR(memory, page->next);
+        page = page->next;
+    }
 }
 
 void json_array_unrelatify(Memory *memory, Json_Array *array)
 {
-    json_array_page_unrelatify(memory, array->begin);
     UNRELATIFY_PTR(memory, array->begin);
     UNRELATIFY_PTR(memory, array->end);
+    json_array_page_unrelatify(memory, array->begin);
 }
 
 void json_object_unrelatify(Memory *memory, Json_Object *object)
@@ -235,6 +241,7 @@ int main()
 
     //// Dumping to file //////////////////////
 
+    // TODO: we need a convenient way to construct and store such index.
     Json_Value *index = memory_alloc(&memory, sizeof(struct Json_Value));
     *index = result.value;
 
