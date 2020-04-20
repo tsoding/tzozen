@@ -329,6 +329,19 @@ struct Json_Object_Page {
     Json_Object_Member elements[JSON_OBJECT_PAGE_CAPACITY];
 };
 
+static inline
+size_t json_object_size(Json_Object object)
+{
+    size_t size = 0;
+    for (Json_Object_Page *page = object.begin;
+         page != NULL;
+         page = page->next)
+    {
+        size += page->size;
+    }
+    return size;
+}
+
 void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value);
 
 // TODO(#40): parse_json_value is not aware of input encoding
@@ -488,7 +501,20 @@ static Json_Result parse_token(String source, String token,
     };
 }
 
-static Json_Result parse_json_number(String source)
+static String clone_string(Memory *memory, String string)
+{
+    char *clone_data = memory_alloc(memory, string.len);
+
+    String clone = {
+        .len = string.len,
+        .data = clone_data
+    };
+
+    memcpy(clone_data, string.data, string.len);
+    return clone;
+}
+
+static Json_Result parse_json_number(Memory *memory, String source)
 {
     String integer = {0};
     String fraction = {0};
@@ -566,9 +592,9 @@ static Json_Result parse_json_number(String source)
         .value = {
             .type = JSON_NUMBER,
             .number = {
-                .integer = integer,
-                .fraction = fraction,
-                .exponent = exponent
+                .integer = clone_string(memory, integer),
+                .fraction = clone_string(memory, fraction),
+                .exponent = clone_string(memory, exponent)
             }
         },
         .rest = source
@@ -1090,7 +1116,7 @@ Json_Result parse_json_value_impl(Memory *memory, String source, int level)
     case '{': return parse_json_object(memory, source, level);
     }
 
-    return parse_json_number(source);
+    return parse_json_number(memory, source);
 }
 
 Json_Result parse_json_value(Memory *memory, String source)
@@ -1182,7 +1208,7 @@ void print_json_array(FILE *stream, Json_Array array)
     for (Json_Array_Page *page = array.begin; page != NULL; page = page->next) {
         for (size_t i = 0; i < page->size; ++i) {
             if (t) {
-                printf(",");
+                fprintf(stream, ",");
             } else {
                 t = 1;
             }
@@ -1199,7 +1225,7 @@ void print_json_object(FILE *stream, Json_Object object)
     for (Json_Object_Page *page = object.begin; page != NULL; page = page->next) {
         for (size_t i = 0; i < page->size; ++i) {
             if (t) {
-                printf(",");
+                fprintf(stream, ",");
             } else {
                 t = 1;
             }
@@ -1307,6 +1333,18 @@ Json_Value json_object_value_by_key(Json_Object object, String key)
         }
     });
     return json_null;
+}
+
+Json_Value json_number(String integer, String fraction, String exponent)
+{
+    return (Json_Value) {
+        .type = JSON_NUMBER,
+        .number = {
+            .integer = integer,
+            .fraction = fraction,
+            .exponent = exponent,
+        },
+    };
 }
 
 #endif  // TZOZEN_H_
