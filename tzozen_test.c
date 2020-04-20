@@ -259,7 +259,16 @@ int main()
 {
     //// Parsing //////////////////////////////
 
-    String input = SLT("{\"numbers\": [1, 2, 3, 4]}");
+    String input =
+        SLT("{\n"
+            "   \"null\": null,\n"
+            "   \"boolean\": true,\n"
+            "   \"boolean\": false,\n"
+            "   \"number\": 69420,\n"
+            "   \"string\": \"hello\",\n"
+            "   \"array\": [null, true, false, 69420, \"hello\"],\n"
+            "   \"object\": {}\n"
+            "}");
 
     printf("Parsing expression:\n\t%.*s\n", (int) input.len, input.data);
 
