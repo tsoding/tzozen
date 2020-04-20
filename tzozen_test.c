@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#define JSON_ARRAY_PAGE_CAPACITY 1
 #include "tzozen.h"
 
 #define MEMORY_CAPACITY (640 * 1000)

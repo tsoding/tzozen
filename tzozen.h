@@ -243,7 +243,9 @@ const char *json_type_as_cstr(Json_Type type)
 
 typedef struct Json_Value Json_Value;
 
+#ifndef JSON_ARRAY_PAGE_CAPACITY
 #define JSON_ARRAY_PAGE_CAPACITY 128
+#endif
 
 typedef struct Json_Array_Page Json_Array_Page;
 
@@ -315,7 +317,9 @@ typedef struct {
     Json_Value value;
 } Json_Object_Member;
 
+#ifndef JSON_OBJECT_PAGE_CAPACITY
 #define JSON_OBJECT_PAGE_CAPACITY 128
+#endif
 
 extern Json_Value json_null;
 extern Json_Value json_true;
