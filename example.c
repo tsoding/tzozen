@@ -5,6 +5,8 @@
 
 static uint8_t memory_buffer[MEMORY_CAPACITY];
 
+// TODO: move example to a separate folder
+
 int main()
 {
     Memory memory = {
