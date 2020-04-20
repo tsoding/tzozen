@@ -12,8 +12,34 @@ static Memory memory = {
     .buffer = memory_buffer
 };
 
-#define RELATIFY_PTR(memory, ptr) (ptr) = (void *) ((const char *) (ptr) - (const char *) (memory)->buffer)
-#define UNRELATIFY_PTR(memory, ptr) (ptr) = (void *) ((const char *) (memory)->buffer + (size_t) (ptr))
+#define RELATIFY_PTR(memory, ptr)                                       \
+    do {                                                                \
+        const char *base = (const char *) (memory)->buffer;             \
+        const char *a = (const char *) (ptr);                           \
+        if (!(base <= a)) {                                             \
+            fprintf(stderr, "%s:%d: Assertion `base <= a` failed\n",    \
+                    __FILE__, __LINE__);                                \
+            fprintf(stderr, "\tbase\t=\t%p\n", base);                   \
+            fprintf(stderr, "\ta\t=\t%p\n", a);                         \
+            abort();                                                    \
+        }                                                               \
+        (ptr) = (void *) (a - base);                                    \
+    } while(0)
+
+#define UNRELATIFY_PTR(memory, ptr)                                     \
+    do {                                                                \
+        const char *base = (const char *) (memory)->buffer;             \
+        size_t offset = (size_t) (ptr);                                 \
+        if (!(offset < (memory)->size)) {                               \
+            fprintf(stderr, "%s:%d: Assertion `offset < (memory)->size` failed\n", \
+                    __FILE__, __LINE__);                                \
+            fprintf(stderr, "\toffset\t=\t%ld\n", offset);              \
+            fprintf(stderr, "\t(memory)->size\t=\t%ld\n", (memory)->size); \
+            abort();                                                    \
+        }                                                               \
+        (ptr) = (void *) (base + offset); \
+    } while(0)
+
 
 void string_relatify(Memory *memory, String *string)
 {
