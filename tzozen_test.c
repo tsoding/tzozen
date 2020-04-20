@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+// TODO: different capacities produce incompatible memory dumps
 #define JSON_ARRAY_PAGE_CAPACITY 1
 #define JSON_OBJECT_PAGE_CAPACITY 1
 #include "tzozen.h"
@@ -272,22 +273,20 @@ int main()
 
     printf("Parsing expression:\n\t%.*s\n", (int) input.len, input.data);
 
+    Json_Value *index = memory_alloc(&memory, sizeof(struct Json_Value));
     Json_Result result = parse_json_value(&memory, input);
     if (result.is_error) {
         fputs("FAILURE:\n\t", stdout);
         print_json_error(stdout, result, input, "<example>");
         exit(1);
     }
+    *index = result.value;
 
     fputs("SUCCESS:\n\t", stdout);
     print_json_value(stdout, result.value);
     fputc('\n', stdout);
 
     //// Dumping to file //////////////////////
-
-    // TODO: we need a convenient way to construct and store such index.
-    Json_Value *index = memory_alloc(&memory, sizeof(struct Json_Value));
-    *index = result.value;
 
     printf("MEMORY USAGE:\n\t%lu bytes\n", memory.size);
 
@@ -310,13 +309,13 @@ int main()
     printf("Loding memory back from %s...\n", MEMORY_DUMP_FILE_PATH);
     load_memory_from_file(&memory, MEMORY_DUMP_FILE_PATH);
 
+    // NOTE: the index is always located at relative pointer 0x0
+
     printf("Unrelatifying the json value...\n");
-    UNRELATIFY_PTR(&memory, index);
-    json_value_unrelatify(&memory, index);
+    json_value_unrelatify(&memory, (Json_Value *) memory.buffer);
 
     printf("Restored JSON:\n\t");
-    print_json_value(stdout, *index);
-
+    print_json_value(stdout, *((Json_Value *) memory.buffer));
     return 0;
 }
 
