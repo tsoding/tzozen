@@ -4,4 +4,3 @@ tzozen_test
 example
 dump_ast
 dump_json
-*.bin

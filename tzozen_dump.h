@@ -120,6 +120,7 @@ void json_value_relatify(Memory *memory, Json_Value *value)
     }
 }
 
+// TODO: dump_memory_to_file should probably relatify automatically
 void dump_memory_to_file(Memory *memory, const char *file_path)
 {
     FILE *file = fopen(file_path, "wb");
@@ -139,6 +140,7 @@ void dump_memory_to_file(Memory *memory, const char *file_path)
     fclose(file);
 }
 
+// TODO: load_memory_from_file should probably unrelatify automatically
 void load_memory_from_file(Memory *memory, const char *file_path)
 {
     FILE *file = fopen(file_path, "rb");
