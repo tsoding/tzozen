@@ -3,3 +3,4 @@ tzozen_test
 example
 dump_ast
 dump_json
+examples/01_basic_usage
