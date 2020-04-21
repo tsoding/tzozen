@@ -1,5 +1,4 @@
 *.o
-tzozen_check
 tzozen_test
 example
 dump_ast
