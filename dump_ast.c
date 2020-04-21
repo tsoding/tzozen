@@ -9,10 +9,14 @@
 
 #define MEMORY_CAPACITY (10 * MEGA)
 
+#define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
+
 void usage(FILE *stream)
 {
     fprintf(stream, "Usage: dump_ast <input.json> <output.bin>\n");
 }
+
+char output_file_path[1024];
 
 int main(int argc, char *argv[])
 {
@@ -24,14 +28,19 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    if (argc < 3) {
+    if (argc < 2) {
         fprintf(stderr, "[ERROR] Not enough arguments!\n");
         usage(stderr);
         exit(1);
     }
 
     const char *input_file_path = argv[1];
-    const char *output_file_path = argv[2];
+    if (argc >= 3) {
+        snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s", argv[2]);
+    } else {
+        // TODO: dump_ast should append architecture to output filename since the dumps are architecture specific
+        snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s.bin", input_file_path);
+    }
 
     String input = read_file_as_string(input_file_path);
 
