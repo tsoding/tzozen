@@ -54,21 +54,17 @@ void json_number_relatify(Memory *memory, Json_Number *number)
     string_relatify(memory, &number->exponent);
 }
 
-void json_array_page_relatify(Memory *memory, Json_Array_Page *page)
+void json_array_elem_relatify(Memory *memory, Json_Array_Elem *elem)
 {
-    if (page == NULL) return;
-
-    for (size_t i = 0; i < page->size; ++i) {
-        json_value_relatify(memory, page->elements + i);
-    }
-
-    json_array_page_relatify(memory, page->next);
-    RELATIFY_PTR(memory, page->next);
+    if (elem == NULL) return;
+    json_value_relatify(memory, &elem->value);
+    json_array_elem_relatify(memory, elem->next);
+    RELATIFY_PTR(memory, elem->next);
 }
 
 void json_array_relatify(Memory *memory, Json_Array *array)
 {
-    json_array_page_relatify(memory, array->begin);
+    json_array_elem_relatify(memory, array->begin);
     RELATIFY_PTR(memory, array->begin);
     RELATIFY_PTR(memory, array->end);
 }
@@ -182,15 +178,12 @@ void json_number_unrelatify(Memory *memory, Json_Number *number)
     string_unrelatify(memory, &number->exponent);
 }
 
-void json_array_page_unrelatify(Memory *memory, Json_Array_Page *page)
+void json_array_elem_unrelatify(Memory *memory, Json_Array_Elem *elem)
 {
-    while (page != NULL) {
-        for (size_t i = 0; i < page->size; ++i) {
-            json_value_unrelatify(memory, page->elements + i);
-        }
-
-        UNRELATIFY_PTR(memory, page->next);
-        page = page->next;
+    while (elem != NULL) {
+        json_value_unrelatify(memory, &elem->value);
+        UNRELATIFY_PTR(memory, elem->next);
+        elem = elem->next;
     }
 }
 
@@ -198,7 +191,7 @@ void json_array_unrelatify(Memory *memory, Json_Array *array)
 {
     UNRELATIFY_PTR(memory, array->begin);
     UNRELATIFY_PTR(memory, array->end);
-    json_array_page_unrelatify(memory, array->begin);
+    json_array_elem_unrelatify(memory, array->begin);
 }
 
 void json_object_member_unrelatify(Memory *memory, Json_Object_Member *member)

@@ -243,15 +243,11 @@ const char *json_type_as_cstr(Json_Type type)
 
 typedef struct Json_Value Json_Value;
 
-#ifndef JSON_ARRAY_PAGE_CAPACITY
-#define JSON_ARRAY_PAGE_CAPACITY 128
-#endif
-
-typedef struct Json_Array_Page Json_Array_Page;
+typedef struct Json_Array_Elem Json_Array_Elem;
 
 typedef struct {
-    Json_Array_Page *begin;
-    Json_Array_Page *end;
+    Json_Array_Elem *begin;
+    Json_Array_Elem *end;
 } Json_Array;
 
 void json_array_push(Memory *memory, Json_Array *array, Json_Value value);
@@ -286,21 +282,20 @@ struct Json_Value {
     };
 };
 
-struct Json_Array_Page {
-    Json_Array_Page *next;
-    size_t size;
-    Json_Value elements[JSON_ARRAY_PAGE_CAPACITY];
+struct Json_Array_Elem {
+    Json_Array_Elem *next;
+    Json_Value value;
 };
 
 static inline
 size_t json_array_size(Json_Array array)
 {
     size_t size = 0;
-    for (Json_Array_Page *page = array.begin;
-         page != NULL;
-         page = page->next)
+    for (Json_Array_Elem *elem = array.begin;
+         elem != NULL;
+         elem = elem->next)
     {
-        size += page->size;
+        size += 1;
     }
     return size;
 }
@@ -386,26 +381,19 @@ String json_trim_begin(String s)
 
 void json_array_push(Memory *memory, Json_Array *array, Json_Value value)
 {
-    assert(memory);
-    assert(array);
+    Json_Array_Elem *next = (Json_Array_Elem *) memory_alloc(memory, sizeof(Json_Array_Elem));
+    memset(next, 0, sizeof(Json_Array_Elem));
+    next->value = value;
 
     if (array->begin == NULL) {
         assert(array->end == NULL);
-        array->begin = (Json_Array_Page *) memory_alloc(memory, sizeof(Json_Array_Page));
-        array->end = array->begin;
-        memset(array->begin, 0, sizeof(Json_Array_Page));
-    }
-
-    if (array->end->size >= JSON_ARRAY_PAGE_CAPACITY) {
-        Json_Array_Page *next = (Json_Array_Page *) memory_alloc(memory, sizeof(Json_Array_Page));
-        memset(next, 0, sizeof(Json_Array_Page));
+        array->begin = next;
+    } else {
+        assert(array->end != NULL);
         array->end->next = next;
-        array->end = next;
     }
 
-    assert(array->end->size < JSON_ARRAY_PAGE_CAPACITY);
-
-    array->end->elements[array->end->size++] = value;
+    array->end = next;
 }
 
 void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value)
@@ -1209,15 +1197,16 @@ void print_json_array(FILE *stream, Json_Array array)
 {
     fprintf(stream, "[");
     int t = 0;
-    for (Json_Array_Page *page = array.begin; page != NULL; page = page->next) {
-        for (size_t i = 0; i < page->size; ++i) {
-            if (t) {
-                fprintf(stream, ",");
-            } else {
-                t = 1;
-            }
-            print_json_value(stream, page->elements[i]);
+    for (Json_Array_Elem *elem = array.begin;
+         elem != NULL;
+         elem = elem->next)
+    {
+        if (t) {
+            fprintf(stream, ",");
+        } else {
+            t = 1;
         }
+        print_json_value(stream, elem->value);
     }
     fprintf(stream, "]");
 }
@@ -1315,7 +1304,7 @@ void print_json_error(FILE *stream, Json_Result result,
     }
 
 #define FOR_ARRAY_JSON(element, object, body)               \
-    for (Json_Array_Page *element##_page = (object).begin;  \
+    for (Json_Array_Elem *element##_page = (object).begin;  \
          element##_page != NULL;                            \
          element##_page = element##_page->next)             \
     {                                                       \

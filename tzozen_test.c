@@ -41,25 +41,22 @@ int json_number_equals(Json_Number a, Json_Number b)
         && string_equal(a.fraction, b.fraction)
         && string_equal(a.exponent, b.exponent);
 }
+
 int json_array_equals (Json_Array a,  Json_Array b)
 {
-    Json_Array_Page *page_a = a.begin;
-    Json_Array_Page *page_b = b.begin;
+    Json_Array_Elem *elem_a = a.begin;
+    Json_Array_Elem *elem_b = b.begin;
 
-    while (page_a != NULL && page_b != NULL) {
-        if (page_a->size != page_b->size) return 0;
-
-        for (size_t i = 0; i < page_a->size; ++i) {
-            if (!json_value_equals(page_a->elements[i], page_b->elements[i])) {
-                return 0;
-            }
+    while (elem_a != NULL && elem_b != NULL) {
+        if (!json_value_equals(elem_a->value, elem_b->value)) {
+            return 0;
         }
 
-        page_a = page_a->next;
-        page_b = page_b->next;
+        elem_a = elem_a->next;
+        elem_b = elem_b->next;
     }
 
-    return page_a == NULL && page_b == NULL;
+    return elem_a == NULL && elem_b == NULL;
 }
 
 int json_object_equals(Json_Object a, Json_Object b)
