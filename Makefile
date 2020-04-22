@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -Wextra -std=c11 -pedantic -I.
+CFLAGS=-Wall -Werror -Wextra -std=c11 -pedantic -I. -ggdb
 
 .PHONY: all
 all: tzozen_test dump_ast dump_json examples/01_basic_usage

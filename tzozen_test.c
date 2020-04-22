@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <dirent.h>
 
+#define JSON_ARRAY_PAGE_CAPACITY 1
+#define JSON_OBJECT_PAGE_CAPACITY 1
 #include "./tzozen_dump.h"
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
@@ -59,15 +61,30 @@ int json_array_equals (Json_Array a,  Json_Array b)
 
     return page_a == NULL && page_b == NULL;
 }
+
 int json_object_equals(Json_Object a, Json_Object b)
 {
-    FOR_OBJECT_JSON(element_of_a, a, {
-        Json_Value value_of_b = json_object_value_by_key(b, element_of_a.key);
-        if (!json_value_equals(element_of_a.value, value_of_b)) {
-            return 0;
+    Json_Object_Page *page_a = a.begin;
+    Json_Object_Page *page_b = b.begin;
+
+    while (page_a != NULL && page_b != NULL) {
+        if (page_a->size != page_b->size) return 0;
+
+        for (size_t i = 0; i < page_a->size; ++i) {
+            if (!string_equal(page_a->elements[i].key, page_b->elements[i].key)) {
+                return 0;
+            }
+
+            if (!json_value_equals(page_a->elements[i].value, page_b->elements[i].value)) {
+                return 0;
+            }
         }
-    });
-    return 1;
+
+        page_a = page_a->next;
+        page_b = page_b->next;
+    }
+
+    return page_a == NULL && page_b == NULL;
 }
 
 int json_value_equals(Json_Value a, Json_Value b)
