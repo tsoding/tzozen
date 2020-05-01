@@ -252,11 +252,11 @@ typedef struct {
 
 void json_array_push(Memory *memory, Json_Array *array, Json_Value value);
 
-typedef struct Json_Object_Pair Json_Object_Pair;
+typedef struct Json_Object_Elem Json_Object_Elem;
 
 typedef struct {
-    Json_Object_Pair *begin;
-    Json_Object_Pair *end;
+    Json_Object_Elem *begin;
+    Json_Object_Elem *end;
 } Json_Object;
 
 typedef struct {
@@ -287,16 +287,16 @@ struct Json_Array_Elem {
     Json_Value value;
 };
 
+#define FOR_JSON(container_type, elem, container)                       \
+    for (container_type##_Elem *elem = (container).begin;               \
+         elem != NULL;                                                  \
+         elem = elem->next)
+
 static inline
 size_t json_array_size(Json_Array array)
 {
     size_t size = 0;
-    for (Json_Array_Elem *elem = array.begin;
-         elem != NULL;
-         elem = elem->next)
-    {
-        size += 1;
-    }
+    FOR_JSON (Json_Array, elem, array) size += 1;
     return size;
 }
 
@@ -317,8 +317,8 @@ extern Json_Value json_false;
 
 Json_Value json_string(String string);
 
-struct Json_Object_Pair {
-    Json_Object_Pair *next;
+struct Json_Object_Elem {
+    Json_Object_Elem *next;
     String key;
     Json_Value value;
 };
@@ -327,12 +327,7 @@ static inline
 size_t json_object_size(Json_Object object)
 {
     size_t size = 0;
-    for (Json_Object_Pair *page = object.begin;
-         page != NULL;
-         page = page->next)
-    {
-        size += 1;
-    }
+    FOR_JSON (Json_Object, elem, object) size += 1;
     return size;
 }
 
@@ -393,8 +388,8 @@ void json_array_push(Memory *memory, Json_Array *array, Json_Value value)
 
 void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value)
 {
-    Json_Object_Pair *next = (Json_Object_Pair *) memory_alloc(memory, sizeof(Json_Object_Pair));
-    memset(next, 0, sizeof(Json_Object_Pair));
+    Json_Object_Elem *next = (Json_Object_Elem *) memory_alloc(memory, sizeof(Json_Object_Elem));
+    memset(next, 0, sizeof(Json_Object_Elem));
     next->key = key;
     next->value = value;
 
@@ -1184,10 +1179,7 @@ void print_json_array(FILE *stream, Json_Array array)
 {
     fprintf(stream, "[");
     int t = 0;
-    for (Json_Array_Elem *elem = array.begin;
-         elem != NULL;
-         elem = elem->next)
-    {
+    FOR_JSON (Json_Array, elem, array) {
         if (t) {
             fprintf(stream, ",");
         } else {
@@ -1202,15 +1194,15 @@ void print_json_object(FILE *stream, Json_Object object)
 {
     fprintf(stream, "{");
     int t = 0;
-    for (Json_Object_Pair *pair = object.begin; pair != NULL; pair = pair->next) {
+    FOR_JSON (Json_Object, elem, object) {
         if (t) {
             fprintf(stream, ",");
         } else {
             t = 1;
         }
-        print_json_string(stream, pair->key);
+        print_json_string(stream, elem->key);
         fprintf(stream, ":");
-        print_json_value(stream, pair->value);
+        print_json_value(stream, elem->value);
     }
     fprintf(stream, "}");
 }
@@ -1273,29 +1265,9 @@ void print_json_error(FILE *stream, Json_Result result,
     }
 }
 
-#define FOR_OBJECT_JSON(pair, object)                           \
-    for (Json_Object_Pair *pair = (object).begin;               \
-         pair != NULL;                                          \
-         pair = pair->next)
-
-#define FOR_ARRAY_JSON(element, object, body)               \
-    for (Json_Array_Elem *element##_page = (object).begin;  \
-         element##_page != NULL;                            \
-         element##_page = element##_page->next)             \
-    {                                                       \
-        for (size_t element##_index = 0;                    \
-             element##_index < element##_page->size;        \
-             element##_index++)                             \
-        {                                                   \
-            Json_Value element =                            \
-                element##_page->elements[element##_index];  \
-            body                                            \
-        }                                                   \
-    }
-
 Json_Value json_object_value_by_key(Json_Object object, String key)
 {
-    FOR_OBJECT_JSON(element, object) {
+    FOR_JSON(Json_Object, element, object) {
         if (string_equal(element->key, key)) {
             return element->value;
         }

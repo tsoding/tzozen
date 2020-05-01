@@ -81,20 +81,20 @@ void json_array_relatify(Memory *memory, Json_Array *array)
     RELATIFY_PTR(memory, array->end);
 }
 
-void json_object_pair_relatify(Memory *memory, Json_Object_Pair *pair)
+void json_object_elem_relatify(Memory *memory, Json_Object_Elem *elem)
 {
-    while (pair != NULL) {
-        void *saved_next = pair->next;
-        string_relatify(memory, &pair->key);
-        json_value_relatify(memory, &pair->value);
-        RELATIFY_PTR(memory, pair->next);
-        pair = saved_next;
+    while (elem != NULL) {
+        void *saved_next = elem->next;
+        string_relatify(memory, &elem->key);
+        json_value_relatify(memory, &elem->value);
+        RELATIFY_PTR(memory, elem->next);
+        elem = saved_next;
     }
 }
 
 void json_object_relatify(Memory *memory, Json_Object *object)
 {
-    json_object_pair_relatify(memory, object->begin);
+    json_object_elem_relatify(memory, object->begin);
     RELATIFY_PTR(memory, object->begin);
     RELATIFY_PTR(memory, object->end);
 }
@@ -198,14 +198,14 @@ void json_array_unrelatify(Memory *memory, Json_Array *array)
     json_array_elem_unrelatify(memory, array->begin);
 }
 
-void json_object_pair_unrelatify(Memory *memory, Json_Object_Pair *pair)
+void json_object_elem_unrelatify(Memory *memory, Json_Object_Elem *elem)
 {
-    while (pair != NULL) {
-        string_unrelatify(memory, &pair->key);
-        json_value_unrelatify(memory, &pair->value);
+    while (elem != NULL) {
+        string_unrelatify(memory, &elem->key);
+        json_value_unrelatify(memory, &elem->value);
 
-        UNRELATIFY_PTR(memory, pair->next);
-        pair = pair->next;
+        UNRELATIFY_PTR(memory, elem->next);
+        elem = elem->next;
     }
 }
 
@@ -213,7 +213,7 @@ void json_object_unrelatify(Memory *memory, Json_Object *object)
 {
     UNRELATIFY_PTR(memory, object->begin);
     UNRELATIFY_PTR(memory, object->end);
-    json_object_pair_unrelatify(memory, object->begin);
+    json_object_elem_unrelatify(memory, object->begin);
 }
 
 void json_value_unrelatify(Memory *memory, Json_Value *index)
