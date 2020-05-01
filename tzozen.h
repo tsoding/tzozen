@@ -33,13 +33,6 @@ void *memory_alloc(Memory *memory, size_t size)
     return result;
 }
 
-static inline
-void memory_clean(Memory *memory)
-{
-    assert(memory);
-    memory->size = 0;
-}
-
 typedef struct  {
     size_t len;
     const char *data;
@@ -50,12 +43,6 @@ String string(size_t len, const char *data)
 {
     String result = {len, data};
     return result;
-}
-
-static inline
-String cstr_as_string(const char *cstr)
-{
-    return string(strlen(cstr), cstr);
 }
 
 static inline
@@ -116,45 +103,6 @@ String trim_begin(String s)
         s.len--;
     }
     return s;
-}
-
-static inline
-String trim_end(String s)
-{
-    while (s.len && isspace(s.data[s.len - 1])) {
-        s.len--;
-    }
-    return s;
-}
-
-static inline
-String trim(String s)
-{
-    return trim_begin(trim_end(s));
-}
-
-static inline
-String chop_word(String *input)
-{
-    if (input->len == 0) {
-        return string_empty();
-    }
-
-    *input = trim_begin(*input);
-
-    size_t i = 0;
-    while (i < input->len && !isspace(input->data[i])) {
-        ++i;
-    }
-
-    String word;
-    word.data = input->data;
-    word.len = i;
-
-    input->data += i;
-    input->len -= i;
-
-    return word;
 }
 
 static inline
