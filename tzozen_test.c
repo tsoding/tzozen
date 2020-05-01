@@ -10,7 +10,7 @@
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define TESTING_FOLDER "./tests/"
 
-uint8_t memory_buffer[10 * MEGA];
+uint8_t memory_buffer[100 * MEGA];
 Memory memory = {
     .capacity = ARRAY_SIZE(memory_buffer),
     .buffer = memory_buffer,
