@@ -5,8 +5,6 @@
 #include <errno.h>
 #include "tzozen.h"
 
-// TODO: get rid of recursion in tzozen_dump.h
-
 // NOTE: We represent relative NULL with `-1` cast to (void*). Which on
 // x86_64 looks like 0xFFFFFFFFFFFFFFFF in memory.
 //
@@ -58,10 +56,12 @@ void json_number_relatify(Memory *memory, Json_Number *number)
 
 void json_array_elem_relatify(Memory *memory, Json_Array_Elem *elem)
 {
-    if (elem == NULL) return;
-    json_value_relatify(memory, &elem->value);
-    json_array_elem_relatify(memory, elem->next);
-    RELATIFY_PTR(memory, elem->next);
+    while (elem != NULL) {
+        void *saved_next = elem->next;
+        json_value_relatify(memory, &elem->value);
+        RELATIFY_PTR(memory, elem->next);
+        elem = saved_next;
+    }
 }
 
 void json_array_relatify(Memory *memory, Json_Array *array)
@@ -73,13 +73,13 @@ void json_array_relatify(Memory *memory, Json_Array *array)
 
 void json_object_pair_relatify(Memory *memory, Json_Object_Pair *pair)
 {
-    if (pair == NULL) return;
-
-    string_relatify(memory, &pair->key);
-    json_value_relatify(memory, &pair->value);
-
-    json_object_pair_relatify(memory, pair->next);
-    RELATIFY_PTR(memory, pair->next);
+    while (pair != NULL) {
+        void *saved_next = pair->next;
+        string_relatify(memory, &pair->key);
+        json_value_relatify(memory, &pair->value);
+        RELATIFY_PTR(memory, pair->next);
+        pair = saved_next;
+    }
 }
 
 void json_object_relatify(Memory *memory, Json_Object *object)
