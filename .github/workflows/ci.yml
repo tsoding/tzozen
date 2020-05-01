@@ -6,9 +6,21 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
-      - name: build the game
+      - name: build
         run: |
           make
           ./tzozen_test
         env:
           CC: gcc
+          CXX: g++
+  build-linux-clang:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: build
+        run: |
+          make
+          ./tzozen_test
+        env:
+          CC: clang
+          CXX: clang++
