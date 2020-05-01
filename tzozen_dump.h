@@ -5,6 +5,16 @@
 #include <errno.h>
 #include "tzozen.h"
 
+// Since those AST dumps are literally memory dumps they are very
+// platform dependant. So we suffix output file names with the
+// corresponding ARCH_SUFFIX to indicated what platform this memory
+// dump is compatible with.
+#if defined(__linux__) && defined(__x86_64__)
+#define DUMP_ARCH_SUFFIX "linux_x86_64"
+#else
+#error "You are building this on a platform that I don't have! Please add your ARCH_SUFFIX and submit a PR at https://github.com/tsoding/tzozen if you have an opportunity. Thanks!"
+#endif
+
 // NOTE: We represent relative NULL with `-1` cast to (void*). Which on
 // x86_64 looks like 0xFFFFFFFFFFFFFFFF in memory.
 //

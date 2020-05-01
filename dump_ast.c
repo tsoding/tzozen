@@ -22,11 +22,6 @@ char output_file_path[1024];
 
 int main(int argc, char *argv[])
 {
-    if (memory.buffer == NULL) {
-        fprintf(stderr, "Could not allocate enough memory: %s\n", strerror(errno));
-        exit(1);
-    }
-
     if (argc < 2) {
         fprintf(stderr, "[ERROR] Not enough arguments!\n");
         usage(stderr);
@@ -37,8 +32,7 @@ int main(int argc, char *argv[])
     if (argc >= 3) {
         snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s", argv[2]);
     } else {
-        // TODO: dump_ast should append architecture to output filename since the dumps are architecture specific
-        snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s.bin", input_file_path);
+        snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s."DUMP_ARCH_SUFFIX".bin", input_file_path);
     }
 
     String input = read_file_as_string(input_file_path);

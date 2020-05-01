@@ -109,7 +109,7 @@ int main()
     while ((dir = readdir(testing_dir)) != NULL) {
         if (!ends_with(dir->d_name, ".json")) continue;
         snprintf(ast_dump_filepath, ARRAY_SIZE(ast_dump_filepath),
-                 "%s/%s.bin", TESTING_FOLDER, dir->d_name);
+                 "%s/%s."DUMP_ARCH_SUFFIX".bin", TESTING_FOLDER, dir->d_name);
         snprintf(json_filepath, ARRAY_SIZE(json_filepath),
                  "%s/%s", TESTING_FOLDER, dir->d_name);
 
