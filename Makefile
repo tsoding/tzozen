@@ -1,4 +1,5 @@
 CFLAGS=-Wall -Werror -Wextra -std=c11 -pedantic -I. -ggdb
+CXXFLAGS=-Wall -Werror -Wextra -std=c++17 -pedantic -I. -ggdb
 
 .PHONY: all
 all: tzozen_test dump_ast dump_json examples/01_basic_usage
@@ -6,8 +7,11 @@ all: tzozen_test dump_ast dump_json examples/01_basic_usage
 tzozen_test: tzozen_test.c tzozen.h
 	$(CC) $(CFLAGS) -o tzozen_test tzozen_test.c
 
-examples/01_basic_usage: examples/01_basic_usage.c tzozen.h
-	$(CC) $(CFLAGS) -o examples/01_basic_usage examples/01_basic_usage.c
+# This example is compiled with C++ compiler to test the library
+# compatibility with C++. We have enough C code in this repo to test
+# the the C compatibility.
+examples/01_basic_usage: examples/01_basic_usage.cpp tzozen.h
+	$(CXX) $(CXXFLAGS) -o examples/01_basic_usage examples/01_basic_usage.cpp
 
 dump_ast: dump_ast.c tzozen.h tzozen_dump.h
 	$(CC) $(CFLAGS) -o dump_ast dump_ast.c

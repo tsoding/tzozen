@@ -2,15 +2,14 @@
 #include "tzozen.h"
 
 #define MEMORY_CAPACITY (640 * KILO)
-
 static uint8_t memory_buffer[MEMORY_CAPACITY];
 
 int main()
 {
-    Memory memory = {
-        .capacity = MEMORY_CAPACITY,
-        .buffer = memory_buffer
-    };
+    Memory memory;
+    memory.capacity = MEMORY_CAPACITY;
+    memory.size = 0;
+    memory.buffer = memory_buffer;
 
     String input =
         SLT("{\n"
