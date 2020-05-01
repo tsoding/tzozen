@@ -61,27 +61,23 @@ int json_array_equals (Json_Array a,  Json_Array b)
 
 int json_object_equals(Json_Object a, Json_Object b)
 {
-    Json_Object_Page *page_a = a.begin;
-    Json_Object_Page *page_b = b.begin;
+    Json_Object_Pair *pair_a = a.begin;
+    Json_Object_Pair *pair_b = b.begin;
 
-    while (page_a != NULL && page_b != NULL) {
-        if (page_a->size != page_b->size) return 0;
-
-        for (size_t i = 0; i < page_a->size; ++i) {
-            if (!string_equal(page_a->elements[i].key, page_b->elements[i].key)) {
-                return 0;
-            }
-
-            if (!json_value_equals(page_a->elements[i].value, page_b->elements[i].value)) {
-                return 0;
-            }
+    while (pair_a != NULL && pair_b != NULL) {
+        if (!string_equal(pair_a->key, pair_b->key)) {
+            return 0;
         }
 
-        page_a = page_a->next;
-        page_b = page_b->next;
+        if (!json_value_equals(pair_a->value, pair_b->value)) {
+            return 0;
+        }
+
+        pair_a = pair_a->next;
+        pair_b = pair_b->next;
     }
 
-    return page_a == NULL && page_b == NULL;
+    return pair_a == NULL && pair_b == NULL;
 }
 
 int json_value_equals(Json_Value a, Json_Value b)

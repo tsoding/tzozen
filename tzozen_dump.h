@@ -5,6 +5,8 @@
 #include <errno.h>
 #include "tzozen.h"
 
+// TODO: get rid of recursion in tzozen_dump.h
+
 // NOTE: We represent relative NULL with `-1` cast to (void*). Which on
 // x86_64 looks like 0xFFFFFFFFFFFFFFFF in memory.
 //
@@ -69,28 +71,20 @@ void json_array_relatify(Memory *memory, Json_Array *array)
     RELATIFY_PTR(memory, array->end);
 }
 
-void json_object_member_relatify(Memory *memory,
-                                 Json_Object_Member *member)
+void json_object_pair_relatify(Memory *memory, Json_Object_Pair *pair)
 {
-    string_relatify(memory, &member->key);
-    json_value_relatify(memory, &member->value);
-}
+    if (pair == NULL) return;
 
-void json_object_page_relatify(Memory *memory, Json_Object_Page *page)
-{
-    if (page == NULL) return;
+    string_relatify(memory, &pair->key);
+    json_value_relatify(memory, &pair->value);
 
-    for (size_t i = 0; i < page->size; ++i) {
-        json_object_member_relatify(memory, page->elements + i);
-    }
-
-    json_object_page_relatify(memory, page->next);
-    RELATIFY_PTR(memory, page->next);
+    json_object_pair_relatify(memory, pair->next);
+    RELATIFY_PTR(memory, pair->next);
 }
 
 void json_object_relatify(Memory *memory, Json_Object *object)
 {
-    json_object_page_relatify(memory, object->begin);
+    json_object_pair_relatify(memory, object->begin);
     RELATIFY_PTR(memory, object->begin);
     RELATIFY_PTR(memory, object->end);
 }
@@ -194,29 +188,22 @@ void json_array_unrelatify(Memory *memory, Json_Array *array)
     json_array_elem_unrelatify(memory, array->begin);
 }
 
-void json_object_member_unrelatify(Memory *memory, Json_Object_Member *member)
+void json_object_pair_unrelatify(Memory *memory, Json_Object_Pair *pair)
 {
-    string_unrelatify(memory, &member->key);
-    json_value_unrelatify(memory, &member->value);
-}
+    while (pair != NULL) {
+        string_unrelatify(memory, &pair->key);
+        json_value_unrelatify(memory, &pair->value);
 
-void json_object_page_unrelatify(Memory *memory, Json_Object_Page *page)
-{
-    while (page != NULL) {
-        for (size_t i = 0; i < page->size; ++i) {
-            json_object_member_unrelatify(memory, page->elements + i);
-        }
-
-        UNRELATIFY_PTR(memory, page->next);
-        page = page->next;
-   }
+        UNRELATIFY_PTR(memory, pair->next);
+        pair = pair->next;
+    }
 }
 
 void json_object_unrelatify(Memory *memory, Json_Object *object)
 {
     UNRELATIFY_PTR(memory, object->begin);
     UNRELATIFY_PTR(memory, object->end);
-    json_object_page_unrelatify(memory, object->begin);
+    json_object_pair_unrelatify(memory, object->begin);
 }
 
 void json_value_unrelatify(Memory *memory, Json_Value *index)
