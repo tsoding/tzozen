@@ -477,7 +477,7 @@ static Json_Result parse_token(String source, String token,
 
 static String clone_string(Memory *memory, String string)
 {
-    char *clone_data = memory_alloc(memory, string.len);
+    char *clone_data = (char *)memory_alloc(memory, string.len);
 
     String clone = {
         .len = string.len,
@@ -1267,7 +1267,7 @@ void print_json_error(FILE *stream, Json_Result result,
 
 Json_Value json_object_value_by_key(Json_Object object, String key)
 {
-    FOR_JSON(Json_Object, element, object) {
+    FOR_JSON (Json_Object, element, object) {
         if (string_equal(element->key, key)) {
             return element->value;
         }
