@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#define TZOZEN_IMPLEMENTATION
 #include "tzozen.h"
 
 #define MEMORY_CAPACITY (640 * KILO)

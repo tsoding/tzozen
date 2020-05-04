@@ -1,5 +1,7 @@
-CFLAGS=-Wall -Werror -Wextra -std=c11 -pedantic -I. -ggdb
-CXXFLAGS=-Wall -Werror -Wextra -std=c++17 -pedantic -I. -ggdb
+# TODO: make it compile with -Wconversion
+COMMONFLAGS=-Wall -Werror -Wextra -pedantic -I. -ggdb
+CFLAGS=$(COMMONFLAGS) -std=c11
+CXXFLAGS=$(COMMONFLAGS) -std=c++17 -fno-exceptions
 
 .PHONY: all
 all: tzozen_test dump_ast dump_json examples/01_basic_usage
