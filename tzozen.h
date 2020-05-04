@@ -668,8 +668,12 @@ static Json_Result parse_escape_sequence(Memory *memory, String source)
 
     for (size_t i = 0; i < unescape_map_size; ++i) {
         if (unescape_map[i][0] == *source.data) {
-            // TODO: unescape_map is not located in memory
-            //   Come up with the test case for this bug first
+            // It may look like we are refering to something outside
+            // of `memory`, but later (see the places where
+            // `parse_escape_sequence()` is used 2020-05-05) we are
+            // copying it to `memory`.
+            //
+            // TODO: We don't have any policy on what kind of memory we should always refer to int Json_Value-s and Json_Result-s
             String s = {1, &unescape_map[i][1]};
             return result_success(drop(source, 1), json_string(s));
         }
