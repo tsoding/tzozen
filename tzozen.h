@@ -2,7 +2,7 @@
 #define TZOZEN_H_
 
 // TODO: https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
-//   [ ] 1. #define LIBRARYNAME_IMPLEMENTATION
+//   [+] 1. #define LIBRARYNAME_IMPLEMENTATION
 //   [+] 2. AVOID DEPENDENCIES
 //   [+] 3. AVOID MALLOC
 //   [ ] 4. ALLOW STATIC IMPLEMENTATION
