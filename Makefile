@@ -1,5 +1,5 @@
 # TODO: make it compile with -Wconversion
-COMMONFLAGS=-Wall -Werror -Wextra -pedantic -I. -ggdb
+COMMONFLAGS=-Wall -Werror -Wextra -Wno-unused-function -pedantic -I. -ggdb
 CFLAGS=$(COMMONFLAGS) -std=c11
 CXXFLAGS=$(COMMONFLAGS) -std=c++17 -fno-exceptions
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#define TZOZEN_STATIC
 #define TZOZEN_IMPLEMENTATION
 #include "./tzozen_dump.h"
 
