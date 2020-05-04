@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#define TZOZEN_IMPLEMENTATION
 #include "./tzozen_dump.h"
 
 #define MEMORY_CAPACITY (100 * MEGA)

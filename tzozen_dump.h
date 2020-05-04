@@ -3,7 +3,6 @@
 
 #include <string.h>
 #include <errno.h>
-#define TZOZEN_IMPLEMENTATION
 #include "tzozen.h"
 
 // Since those AST dumps are literally memory dumps they are very

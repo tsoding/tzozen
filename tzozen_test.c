@@ -3,8 +3,7 @@
 #include <errno.h>
 #include <dirent.h>
 
-#define JSON_ARRAY_PAGE_CAPACITY 1
-#define JSON_OBJECT_PAGE_CAPACITY 1
+#define TZOZEN_IMPLEMENTATION
 #include "./tzozen_dump.h"
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
