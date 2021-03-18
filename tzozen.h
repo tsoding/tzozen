@@ -13,11 +13,17 @@
 //     Because I could put it to my CV and it would be verifiable by Ctrl+F.
 //     Which is important when you are nobody.
 
+// NOTES:
+// - Define TZOZEN_NO_STDIO to remove all the code that uses stdio.h
+
 #include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+#ifndef TZOZEN_NO_STDIO
+#include <stdio.h>
+#endif // TZOZEN_NO_STDIO
 
 #define KILO 1024LL
 #define MEGA (1024LL * KILO)
@@ -167,7 +173,7 @@ typedef struct {
 
 TZOZENDEF Json_Result result_success(String rest, Json_Value value);
 TZOZENDEF Json_Result result_failure(String rest, const char *message);
-TZOZENDEF void print_json_error(FILE *stream, Json_Result result, String source, const char *prefix);
+
 
 TZOZENDEF Json_Result parse_token(String source, String token, Json_Value value, const char *message);
 TZOZENDEF Json_Result parse_json_number(Memory *memory, String source);
@@ -179,12 +185,16 @@ TZOZENDEF Json_Result parse_json_object(Memory *memory, String source, int level
 TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, String source, int level);
 TZOZENDEF Json_Result parse_json_value(Memory *memory, String source);
 
+#ifndef TZOZEN_NO_STDIO
 TZOZENDEF void print_json_null(FILE *stream);
+TZOZENDEF void print_json_boolean(FILE *stream, int boolean);
 TZOZENDEF void print_json_number(FILE *stream, Json_Number number);
 TZOZENDEF void print_json_string(FILE *stream, String string);
 TZOZENDEF void print_json_array(FILE *stream, Json_Array array);
 TZOZENDEF void print_json_object(FILE *stream, Json_Object object);
 TZOZENDEF void print_json_value(FILE *stream, Json_Value value);
+TZOZENDEF void print_json_error(FILE *stream, Json_Result result, String source, const char *prefix);
+#endif // TZOZEN_NO_STDIO
 
 #endif  // TZOZEN_H_
 
@@ -966,6 +976,7 @@ TZOZENDEF Json_Result parse_json_value(Memory *memory, String source)
     return parse_json_value_with_depth(memory, source, 0);
 }
 
+#ifndef TZOZEN_NO_STDIO
 TZOZENDEF void print_json_null(FILE *stream)
 {
     fprintf(stream, "null");
@@ -992,19 +1003,6 @@ TZOZENDEF void print_json_number(FILE *stream, Json_Number number)
     if (number.exponent.len > 0) {
         fputc('e', stream);
         fwrite(number.exponent.data, 1, number.exponent.len, stream);
-    }
-}
-
-TZOZENDEF int json_get_utf8_char_len(unsigned char ch)
-{
-    if ((ch & 0x80) == 0) return 1;
-    switch (ch & 0xf0) {
-        case 0xf0:
-            return 4;
-        case 0xe0:
-            return 3;
-        default:
-            return 2;
     }
 }
 
@@ -1125,6 +1123,20 @@ TZOZENDEF void print_json_error(FILE *stream, Json_Result result,
         String line = chop_line(&source);
         fwrite(line.data, 1, line.len, stream);
         fputc('\n', stream);
+    }
+}
+#endif // TZOZEN_NO_STDIO
+
+TZOZENDEF int json_get_utf8_char_len(unsigned char ch)
+{
+    if ((ch & 0x80) == 0) return 1;
+    switch (ch & 0xf0) {
+        case 0xf0:
+            return 4;
+        case 0xe0:
+            return 3;
+        default:
+            return 2;
     }
 }
 
