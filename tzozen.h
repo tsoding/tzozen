@@ -19,7 +19,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-#include <ctype.h>
 
 #ifndef TZOZEN_NO_STDIO
 #include <stdio.h>
@@ -72,6 +71,7 @@ TZOZENDEF String take(String s, size_t n);
 TZOZENDEF String drop(String s, size_t n);
 TZOZENDEF int prefix_of(String prefix, String s);
 TZOZENDEF int json_isspace(char c);
+TZOZENDEF int json_isdigit(char c);
 TZOZENDEF String trim_begin(String s);
 TZOZENDEF int64_t stoi64(String integer);
 TZOZENDEF String clone_string(Memory *memory, String string);
@@ -400,8 +400,11 @@ TZOZENDEF Json_Value json_object(Json_Object object)
     return value;
 }
 
-// We are not using isspace from ctype is because it considers more
-// characters to be whitespaces than the JSON spec.
+TZOZENDEF int json_isdigit(char c)
+{
+    return '0' <= c && c <= '9';
+}
+
 TZOZENDEF int json_isspace(char c)
 {
     return c == 0x20 || c == 0x0A || c == 0x0D || c == 0x09;
@@ -469,7 +472,7 @@ TZOZENDEF int64_t stoi64(String integer)
     }
 
     while (integer.len) {
-        assert(isdigit(*integer.data));
+        assert(json_isdigit(*integer.data));
         result = result * 10 + (*integer.data - '0');
         chop(&integer, 1);
     }
@@ -555,7 +558,7 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
         chop(&source, 1);
     }
 
-    while (source.len && isdigit(*source.data)) {
+    while (source.len && json_isdigit(*source.data)) {
         integer.len += 1;
         chop(&source, 1);
     }
@@ -572,7 +575,7 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
         chop(&source, 1);
         fraction.data = source.data;
 
-        while (source.len && isdigit(*source.data)) {
+        while (source.len && json_isdigit(*source.data)) {
             fraction.len  += 1;
             chop(&source, 1);
         }
@@ -582,7 +585,7 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
         }
     }
 
-    if (source.len && tolower(*source.data) == 'e') {
+    if (source.len && (*source.data == 'e' || *source.data == 'E')) {
         chop(&source, 1);
 
         exponent.data = source.data;
@@ -592,7 +595,7 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
             chop(&source, 1);
         }
 
-        while (source.len && isdigit(*source.data)) {
+        while (source.len && json_isdigit(*source.data)) {
             exponent.len  += 1;
             chop(&source, 1);
         }
@@ -647,12 +650,12 @@ TZOZENDEF Json_Result parse_json_string_literal(String source)
 
 TZOZENDEF int32_t unhex(char x)
 {
-    x = tolower(x);
-
     if ('0' <= x && x <= '9') {
         return x - '0';
     } else if ('a' <= x && x <= 'f') {
         return x - 'a' + 10;
+    } else if ('A' <= x && x <= 'F') {
+        return x - 'A' + 10;
     }
 
     return -1;
@@ -1022,7 +1025,7 @@ TZOZENDEF void print_json_string(FILE *stream, String string)
         } else if (ch >= '\b' && ch <= '\r') {
             fwrite("\\", 1, 1, stream);
             fwrite(&specials[ch - '\b'], 1, 1, stream);
-        } else if (isprint(ch)) {
+        } else if (0x20 <= ch && ch <= 0x7F) { // is printable
             fwrite(p + i, 1, 1, stream);
         } else if ((cl = json_get_utf8_char_len(ch)) == 1) {
             fwrite("\\u00", 1, 4, stream);
