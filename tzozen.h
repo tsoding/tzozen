@@ -24,10 +24,6 @@
 #include <stdio.h>
 #endif // TZOZEN_NO_STDIO
 
-#define KILO 1024LL
-#define MEGA (1024LL * KILO)
-#define GIGA (1024LL * MEGA)
-
 #ifndef TZOZENDEF
 #    ifdef TZOZEN_STATIC
 #        define TZOZENDEF static

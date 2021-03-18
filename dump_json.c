@@ -5,7 +5,7 @@
 #define TZOZEN_IMPLEMENTATION
 #include "./tzozen_dump.h"
 
-#define MEMORY_CAPACITY (100 * MEGA)
+#define MEMORY_CAPACITY (100 * 1000 * 1000)
 uint8_t memory_buffer[MEMORY_CAPACITY];
 Memory memory = {
     .capacity = MEMORY_CAPACITY,

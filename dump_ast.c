@@ -6,7 +6,7 @@
 #define TZOZEN_IMPLEMENTATION
 #include "./tzozen_dump.h"
 
-#define MEMORY_CAPACITY (100 * MEGA)
+#define MEMORY_CAPACITY (100 * 1000 * 1000)
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 
 uint8_t memory_buffer[MEMORY_CAPACITY];

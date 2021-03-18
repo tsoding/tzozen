@@ -2,7 +2,7 @@
 #define TZOZEN_IMPLEMENTATION
 #include "tzozen.h"
 
-#define MEMORY_CAPACITY (640 * KILO)
+#define MEMORY_CAPACITY (640 * 1000)
 static uint8_t memory_buffer[MEMORY_CAPACITY];
 
 int main()
