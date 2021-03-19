@@ -57,7 +57,6 @@ typedef struct  {
 #define SLT(literal) string(sizeof(literal) - 1, literal)
 
 TZOZENDEF String string(size_t len, const char *data);
-TZOZENDEF String string_empty(void);
 TZOZENDEF void chop(String *s, size_t n);
 TZOZENDEF String chop_until_char(String *input, char delim);
 TZOZENDEF String chop_line(String *input);
@@ -213,16 +212,10 @@ TZOZENDEF String string(size_t len, const char *data)
     return result;
 }
 
-TZOZENDEF String string_empty(void)
-{
-    String result = {0, NULL};
-    return result;
-}
-
 TZOZENDEF String chop_until_char(String *input, char delim)
 {
     if (input->len == 0) {
-        return string_empty();
+        return *input;
     }
 
     size_t i = 0;
