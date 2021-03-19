@@ -32,6 +32,8 @@
 #    endif
 #endif
 
+// TODO: more generic allocator
+// Also make sure to introduce functions that free memory and try to not leak anythinga
 typedef struct {
     size_t capacity;
     size_t size;
@@ -49,6 +51,7 @@ typedef struct {
 TZOZENDEF Utf8_Chunk utf8_encode_rune(uint32_t rune);
 TZOZENDEF int json_get_utf8_char_len(unsigned char ch);
 
+// TODO: the name of the string type is to generic and may collide with user's code
 typedef struct  {
     size_t len;
     const char *data;
