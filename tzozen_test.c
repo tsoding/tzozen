@@ -11,13 +11,13 @@
 #define TESTING_FOLDER "./tests/"
 
 uint8_t memory_buffer[100 * 1000 * 1000];
-Memory memory = {
+Tzozen_Memory memory = {
     .capacity = ARRAY_SIZE(memory_buffer),
     .buffer = memory_buffer,
 };
 
 uint8_t dump_memory_buffer[ARRAY_SIZE(memory_buffer)];
-Memory dump_memory = {
+Tzozen_Memory dump_memory = {
     .capacity = ARRAY_SIZE(dump_memory_buffer),
     .buffer = dump_memory_buffer,
 };
@@ -37,9 +37,9 @@ int json_value_equals(Json_Value a, Json_Value b);
 
 int json_number_equals(Json_Number a, Json_Number b)
 {
-    return string_equal(a.integer, b.integer)
-        && string_equal(a.fraction, b.fraction)
-        && string_equal(a.exponent, b.exponent);
+    return tzozen_str_equal(a.integer, b.integer)
+        && tzozen_str_equal(a.fraction, b.fraction)
+        && tzozen_str_equal(a.exponent, b.exponent);
 }
 
 int json_array_equals (Json_Array a,  Json_Array b)
@@ -65,7 +65,7 @@ int json_object_equals(Json_Object a, Json_Object b)
     Json_Object_Elem *elem_b = b.begin;
 
     while (elem_a != NULL && elem_b != NULL) {
-        if (!string_equal(elem_a->key, elem_b->key)) {
+        if (!tzozen_str_equal(elem_a->key, elem_b->key)) {
             return 0;
         }
 
@@ -88,7 +88,7 @@ int json_value_equals(Json_Value a, Json_Value b)
     case JSON_NULL: return 1;
     case JSON_BOOLEAN: return a.boolean == b.boolean;
     case JSON_NUMBER: return json_number_equals(a.number, b.number);
-    case JSON_STRING: return string_equal(a.string, b.string);
+    case JSON_STRING: return tzozen_str_equal(a.string, b.string);
     case JSON_ARRAY: return json_array_equals(a.array, b.array);
     case JSON_OBJECT: return json_object_equals(a.object, b.object);
     }
@@ -115,7 +115,7 @@ int main()
 
         printf("%s\n", json_filepath);
 
-        String source = read_file_as_string(json_filepath);
+        Tzozen_Str source = read_file_as_string(json_filepath);
         Json_Result result = parse_json_value(&memory, source);
         if (result.is_error) {
             print_json_error(stderr, result, source, json_filepath);
