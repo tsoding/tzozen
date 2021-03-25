@@ -51,27 +51,26 @@ typedef struct {
 TZOZENDEF Utf8_Chunk utf8_encode_rune(uint32_t rune);
 TZOZENDEF int json_get_utf8_char_len(unsigned char ch);
 
-// TODO: the name of the string type is to generic and may collide with user's code
 typedef struct  {
     size_t len;
     const char *data;
-} String;
+} Tzozen_Str;
 
-#define SLT(literal) string(sizeof(literal) - 1, literal)
+#define SLT(literal) string(sizeof(literal), literal)
 
-TZOZENDEF String string(size_t len, const char *data);
-TZOZENDEF void chop(String *s, size_t n);
-TZOZENDEF String chop_until_char(String *input, char delim);
-TZOZENDEF String chop_line(String *input);
-TZOZENDEF int string_equal(String a, String b);
-TZOZENDEF String take(String s, size_t n);
-TZOZENDEF String drop(String s, size_t n);
-TZOZENDEF int prefix_of(String prefix, String s);
+TZOZENDEF Tzozen_Str string(size_t len, const char *data);
+TZOZENDEF void chop(Tzozen_Str *s, size_t n);
+TZOZENDEF Tzozen_Str chop_until_char(Tzozen_Str *input, char delim);
+TZOZENDEF Tzozen_Str chop_line(Tzozen_Str *input);
+TZOZENDEF int string_equal(Tzozen_Str a, Tzozen_Str b);
+TZOZENDEF Tzozen_Str take(Tzozen_Str s, size_t n);
+TZOZENDEF Tzozen_Str drop(Tzozen_Str s, size_t n);
+TZOZENDEF int prefix_of(Tzozen_Str prefix, Tzozen_Str s);
 TZOZENDEF int json_isspace(char c);
 TZOZENDEF int json_isdigit(char c);
-TZOZENDEF String trim_begin(String s);
-TZOZENDEF int64_t stoi64(String integer);
-TZOZENDEF String clone_string(Memory *memory, String string);
+TZOZENDEF Tzozen_Str trim_begin(Tzozen_Str s);
+TZOZENDEF int64_t stoi64(Tzozen_Str integer);
+TZOZENDEF Tzozen_Str clone_string(Memory *memory, Tzozen_Str string);
 TZOZENDEF int32_t unhex(char x);
 
 #ifndef JSON_DEPTH_MAX_LIMIT
@@ -109,16 +108,16 @@ typedef struct {
 } Json_Object;
 
 TZOZENDEF size_t json_object_size(Json_Object object);
-TZOZENDEF void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value);
-TZOZENDEF Json_Value json_object_value_by_key(Json_Object object, String key);
+TZOZENDEF void json_object_push(Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value);
+TZOZENDEF Json_Value json_object_value_by_key(Json_Object object, Tzozen_Str key);
 
 typedef struct {
-    // TODO: because of the use of String-s Json_Number can hold an incorrect value
+    // TODO: because of the use of Tzozen_Str-s Json_Number can hold an incorrect value
     //   But you can only get an incorrect Json_Number if you construct it yourself.
     //   Anything coming from parse_json_value should be always a correct number.
-    String integer;
-    String fraction;
-    String exponent;
+    Tzozen_Str integer;
+    Tzozen_Str fraction;
+    Tzozen_Str exponent;
 } Json_Number;
 
 TZOZENDEF int64_t json_number_to_integer(Json_Number number);
@@ -129,7 +128,7 @@ struct Json_Value {
     {
         int boolean;
         Json_Number number;
-        String string;
+        Tzozen_Str string;
         Json_Array array;
         Json_Object object;
     };
@@ -138,8 +137,8 @@ struct Json_Value {
 TZOZENDEF Json_Value json_null();
 TZOZENDEF Json_Value json_true();
 TZOZENDEF Json_Value json_false();
-TZOZENDEF Json_Value json_number(String integer, String fraction, String exponent);
-TZOZENDEF Json_Value json_string(String string);
+TZOZENDEF Json_Value json_number(Tzozen_Str integer, Tzozen_Str fraction, Tzozen_Str exponent);
+TZOZENDEF Json_Value json_string(Tzozen_Str string);
 TZOZENDEF Json_Value json_array_empty();
 TZOZENDEF Json_Value json_array(Json_Array array);
 TZOZENDEF Json_Value json_object_empty();
@@ -152,7 +151,7 @@ struct Json_Array_Elem {
 
 struct Json_Object_Elem {
     Json_Object_Elem *next;
-    String key;
+    Tzozen_Str key;
     Json_Value value;
 };
 
@@ -163,34 +162,34 @@ struct Json_Object_Elem {
 
 typedef struct {
     Json_Value value;
-    String rest;
+    Tzozen_Str rest;
     int is_error;
     const char *message;
 } Json_Result;
 
-TZOZENDEF Json_Result result_success(String rest, Json_Value value);
-TZOZENDEF Json_Result result_failure(String rest, const char *message);
+TZOZENDEF Json_Result result_success(Tzozen_Str rest, Json_Value value);
+TZOZENDEF Json_Result result_failure(Tzozen_Str rest, const char *message);
 
 
-TZOZENDEF Json_Result parse_token(String source, String token, Json_Value value, const char *message);
-TZOZENDEF Json_Result parse_json_number(Memory *memory, String source);
-TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, String source);
-TZOZENDEF Json_Result parse_json_string_literal(String source);
-TZOZENDEF Json_Result parse_json_string(Memory *memory, String source);
-TZOZENDEF Json_Result parse_json_array(Memory *memory, String source, int level);
-TZOZENDEF Json_Result parse_json_object(Memory *memory, String source, int level);
-TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, String source, int level);
-TZOZENDEF Json_Result parse_json_value(Memory *memory, String source);
+TZOZENDEF Json_Result parse_token(Tzozen_Str source, Tzozen_Str token, Json_Value value, const char *message);
+TZOZENDEF Json_Result parse_json_number(Memory *memory, Tzozen_Str source);
+TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, Tzozen_Str source);
+TZOZENDEF Json_Result parse_json_string_literal(Tzozen_Str source);
+TZOZENDEF Json_Result parse_json_string(Memory *memory, Tzozen_Str source);
+TZOZENDEF Json_Result parse_json_array(Memory *memory, Tzozen_Str source, int level);
+TZOZENDEF Json_Result parse_json_object(Memory *memory, Tzozen_Str source, int level);
+TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, Tzozen_Str source, int level);
+TZOZENDEF Json_Result parse_json_value(Memory *memory, Tzozen_Str source);
 
 #ifndef TZOZEN_NO_STDIO
 TZOZENDEF void print_json_null(FILE *stream);
 TZOZENDEF void print_json_boolean(FILE *stream, int boolean);
 TZOZENDEF void print_json_number(FILE *stream, Json_Number number);
-TZOZENDEF void print_json_string(FILE *stream, String string);
+TZOZENDEF void print_json_string(FILE *stream, Tzozen_Str string);
 TZOZENDEF void print_json_array(FILE *stream, Json_Array array);
 TZOZENDEF void print_json_object(FILE *stream, Json_Object object);
 TZOZENDEF void print_json_value(FILE *stream, Json_Value value);
-TZOZENDEF void print_json_error(FILE *stream, Json_Result result, String source, const char *prefix);
+TZOZENDEF void print_json_error(FILE *stream, Json_Result result, Tzozen_Str source, const char *prefix);
 #endif // TZOZEN_NO_STDIO
 
 #endif  // TZOZEN_H_
@@ -209,13 +208,13 @@ TZOZENDEF void *memory_alloc(Memory *memory, size_t size)
     return result;
 }
 
-TZOZENDEF String string(size_t len, const char *data)
+TZOZENDEF Tzozen_Str string(size_t len, const char *data)
 {
-    String result = {len, data};
+    Tzozen_Str result = {len, data};
     return result;
 }
 
-TZOZENDEF String chop_until_char(String *input, char delim)
+TZOZENDEF Tzozen_Str chop_until_char(Tzozen_Str *input, char delim)
 {
     if (input->len == 0) {
         return *input;
@@ -225,7 +224,7 @@ TZOZENDEF String chop_until_char(String *input, char delim)
     while (i < input->len && input->data[i] != delim)
         ++i;
 
-    String line;
+    Tzozen_Str line;
     line.data = input->data;
     line.len = i;
 
@@ -240,40 +239,40 @@ TZOZENDEF String chop_until_char(String *input, char delim)
     return line;
 }
 
-TZOZENDEF String chop_line(String *input)
+TZOZENDEF Tzozen_Str chop_line(Tzozen_Str *input)
 {
     return chop_until_char(input, '\n');
 }
 
-TZOZENDEF int string_equal(String a, String b)
+TZOZENDEF int string_equal(Tzozen_Str a, Tzozen_Str b)
 {
     if (a.len != b.len) return 0;
     return memcmp(a.data, b.data, a.len) == 0;
 }
 
-TZOZENDEF String take(String s, size_t n)
+TZOZENDEF Tzozen_Str take(Tzozen_Str s, size_t n)
 {
     if (s.len < n) return s;
-    String result = { n, s.data };
+    Tzozen_Str result = { n, s.data };
     return result;
 }
 
-TZOZENDEF String drop(String s, size_t n)
+TZOZENDEF Tzozen_Str drop(Tzozen_Str s, size_t n)
 {
     if (s.len < n) return SLT("");
-    String result = {
+    Tzozen_Str result = {
         s.len - n,
         s.data + n
     };
     return result;
 }
 
-TZOZENDEF int prefix_of(String prefix, String s)
+TZOZENDEF int prefix_of(Tzozen_Str prefix, Tzozen_Str s)
 {
     return string_equal(prefix, take(s, prefix.len));
 }
 
-TZOZENDEF void chop(String *s, size_t n)
+TZOZENDEF void chop(Tzozen_Str *s, size_t n)
 {
     *s = drop(*s, n);
 }
@@ -332,7 +331,7 @@ TZOZENDEF Json_Value json_false()
     return value;
 }
 
-TZOZENDEF Json_Value json_number(String integer, String fraction, String exponent)
+TZOZENDEF Json_Value json_number(Tzozen_Str integer, Tzozen_Str fraction, Tzozen_Str exponent)
 {
     Json_Value value = json_null();
     value.type = JSON_NUMBER;
@@ -342,7 +341,7 @@ TZOZENDEF Json_Value json_number(String integer, String fraction, String exponen
     return value;
 }
 
-TZOZENDEF Json_Value json_string(String string)
+TZOZENDEF Json_Value json_string(Tzozen_Str string)
 {
     Json_Value value;
     memset(&value, 0, sizeof(value));
@@ -391,7 +390,7 @@ TZOZENDEF int json_isspace(char c)
     return c == 0x20 || c == 0x0A || c == 0x0D || c == 0x09;
 }
 
-TZOZENDEF String trim_begin(String s)
+TZOZENDEF Tzozen_Str trim_begin(Tzozen_Str s)
 {
     while (s.len && json_isspace(*s.data)) {
         s.data++;
@@ -417,7 +416,7 @@ TZOZENDEF void json_array_push(Memory *memory, Json_Array *array, Json_Value val
     array->end = next;
 }
 
-TZOZENDEF void json_object_push(Memory *memory, Json_Object *object, String key, Json_Value value)
+TZOZENDEF void json_object_push(Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value)
 {
     Json_Object_Elem *next = (Json_Object_Elem *) memory_alloc(memory, sizeof(Json_Object_Elem));
     memset(next, 0, sizeof(Json_Object_Elem));
@@ -435,7 +434,7 @@ TZOZENDEF void json_object_push(Memory *memory, Json_Object *object, String key,
     object->end = next;
 }
 
-TZOZENDEF int64_t stoi64(String integer)
+TZOZENDEF int64_t stoi64(Tzozen_Str integer)
 {
     if (integer.len == 0) {
         return 0;
@@ -488,7 +487,7 @@ TZOZENDEF int64_t json_number_to_integer(Json_Number number)
     return result;
 }
 
-TZOZENDEF Json_Result result_success(String rest, Json_Value value)
+TZOZENDEF Json_Result result_success(Tzozen_Str rest, Json_Value value)
 {
     Json_Result result;
     memset(&result, 0, sizeof(result));
@@ -497,7 +496,7 @@ TZOZENDEF Json_Result result_success(String rest, Json_Value value)
     return result;
 }
 
-TZOZENDEF Json_Result result_failure(String rest, const char *message)
+TZOZENDEF Json_Result result_failure(Tzozen_Str rest, const char *message)
 {
     Json_Result result;
     memset(&result, 0, sizeof(result));
@@ -507,7 +506,7 @@ TZOZENDEF Json_Result result_failure(String rest, const char *message)
     return result;
 }
 
-TZOZENDEF Json_Result parse_token(String source, String token,
+TZOZENDEF Json_Result parse_token(Tzozen_Str source, Tzozen_Str token,
                         Json_Value value,
                         const char *message)
 {
@@ -518,19 +517,19 @@ TZOZENDEF Json_Result parse_token(String source, String token,
     return result_failure(source, message);
 }
 
-TZOZENDEF String clone_string(Memory *memory, String string)
+TZOZENDEF Tzozen_Str clone_string(Memory *memory, Tzozen_Str string)
 {
     char *clone_data = (char *)memory_alloc(memory, string.len);
-    String clone = { string.len, clone_data};
+    Tzozen_Str clone = { string.len, clone_data};
     memcpy(clone_data, string.data, string.len);
     return clone;
 }
 
-TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
+TZOZENDEF Json_Result parse_json_number(Memory *memory, Tzozen_Str source)
 {
-    String integer = {0, NULL};
-    String fraction = {0, NULL};
-    String exponent = {0, NULL};
+    Tzozen_Str integer = {0, NULL};
+    Tzozen_Str fraction = {0, NULL};
+    Tzozen_Str exponent = {0, NULL};
 
     integer.data = source.data;
 
@@ -596,7 +595,7 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, String source)
             clone_string(memory, exponent)));
 }
 
-TZOZENDEF Json_Result parse_json_string_literal(String source)
+TZOZENDEF Json_Result parse_json_string_literal(Tzozen_Str source)
 {
     if (source.len == 0 || *source.data != '"') {
         return result_failure(source, "Expected '\"'");
@@ -604,7 +603,7 @@ TZOZENDEF Json_Result parse_json_string_literal(String source)
 
     chop(&source, 1);
 
-    String s = { 0, source.data };
+    Tzozen_Str s = { 0, source.data };
 
     while (source.len && *source.data != '"') {
         if (*source.data == '\\') {
@@ -679,7 +678,7 @@ TZOZENDEF Utf8_Chunk utf8_encode_rune(uint32_t rune)
     return chunk;
 }
 
-TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, String source)
+TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, Tzozen_Str source)
 {
     static char unescape_map[][2] = {
         {'b', '\b'},
@@ -711,7 +710,7 @@ TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, String source)
             // copying it to `memory`.
             //
             // TODO: We don't have any policy on what kind of memory we should always refer to int Json_Value-s and Json_Result-s
-            String s = {1, &unescape_map[i][1]};
+            Tzozen_Str s = {1, &unescape_map[i][1]};
             return result_success(drop(source, 1), json_string(s));
         }
     }
@@ -777,11 +776,11 @@ TZOZENDEF Json_Result parse_escape_sequence(Memory *memory, String source)
     char *data = (char *) memory_alloc(memory, utf8_chunk.size);
     memcpy(data, utf8_chunk.buffer, utf8_chunk.size);
 
-    String s = {utf8_chunk.size, data};
+    Tzozen_Str s = {utf8_chunk.size, data};
     return result_success(source, json_string(s));
 }
 
-TZOZENDEF Json_Result parse_json_string(Memory *memory, String source)
+TZOZENDEF Json_Result parse_json_string(Memory *memory, Tzozen_Str source)
 {
     Json_Result result = parse_json_string_literal(source);
     if (result.is_error) return result;
@@ -789,7 +788,7 @@ TZOZENDEF Json_Result parse_json_string(Memory *memory, String source)
 
     const size_t buffer_capacity = result.value.string.len;
     source = result.value.string;
-    String rest = result.rest;
+    Tzozen_Str rest = result.rest;
 
     char *buffer = (char *)memory_alloc(memory, buffer_capacity);
     size_t buffer_size = 0;
@@ -814,11 +813,11 @@ TZOZENDEF Json_Result parse_json_string(Memory *memory, String source)
         }
     }
 
-    String result_string = {buffer_size, buffer};
+    Tzozen_Str result_string = {buffer_size, buffer};
     return result_success(rest, json_string(result_string));
 }
 
-TZOZENDEF Json_Result parse_json_array(Memory *memory, String source, int level)
+TZOZENDEF Json_Result parse_json_array(Memory *memory, Tzozen_Str source, int level)
 {
     assert(memory);
 
@@ -867,7 +866,7 @@ TZOZENDEF Json_Result parse_json_array(Memory *memory, String source, int level)
     return result_failure(source, "EOF");
 }
 
-TZOZENDEF Json_Result parse_json_object(Memory *memory, String source, int level)
+TZOZENDEF Json_Result parse_json_object(Memory *memory, Tzozen_Str source, int level)
 {
     assert(memory);
 
@@ -930,7 +929,7 @@ TZOZENDEF Json_Result parse_json_object(Memory *memory, String source, int level
     return result_failure(source, "EOF");
 }
 
-TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, String source, int level)
+TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, Tzozen_Str source, int level)
 {
     if (level >= JSON_DEPTH_MAX_LIMIT) {
         return result_failure(source, "Reached the max limit of depth");
@@ -955,7 +954,7 @@ TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, String source,
 }
 
 // TODO: parse_json_value is not aware of input encoding
-TZOZENDEF Json_Result parse_json_value(Memory *memory, String source)
+TZOZENDEF Json_Result parse_json_value(Memory *memory, Tzozen_Str source)
 {
     return parse_json_value_with_depth(memory, source, 0);
 }
@@ -990,7 +989,7 @@ TZOZENDEF void print_json_number(FILE *stream, Json_Number number)
     }
 }
 
-TZOZENDEF void print_json_string(FILE *stream, String string)
+TZOZENDEF void print_json_string(FILE *stream, Tzozen_Str string)
 {
     const char *hex_digits = "0123456789abcdef";
     const char *specials = "btnvfr";
@@ -1077,7 +1076,7 @@ TZOZENDEF void print_json_value(FILE *stream, Json_Value value)
 }
 
 TZOZENDEF void print_json_error(FILE *stream, Json_Result result,
-                                String source, const char *prefix)
+                                Tzozen_Str source, const char *prefix)
 {
     assert(stream);
     assert(source.data <= result.rest.data);
@@ -1085,7 +1084,7 @@ TZOZENDEF void print_json_error(FILE *stream, Json_Result result,
     size_t n = result.rest.data - source.data;
 
     for (size_t line_number = 1; source.len; ++line_number) {
-        String line = chop_line(&source);
+        Tzozen_Str line = chop_line(&source);
 
         if (n <= line.len) {
             fprintf(stream, "%s:%ld: %s\n", prefix, line_number, result.message);
@@ -1104,7 +1103,7 @@ TZOZENDEF void print_json_error(FILE *stream, Json_Result result,
     }
 
     for (int i = 0; source.len && i < 3; ++i) {
-        String line = chop_line(&source);
+        Tzozen_Str line = chop_line(&source);
         fwrite(line.data, 1, line.len, stream);
         fputc('\n', stream);
     }
@@ -1124,7 +1123,7 @@ TZOZENDEF int json_get_utf8_char_len(unsigned char ch)
     }
 }
 
-TZOZENDEF Json_Value json_object_value_by_key(Json_Object object, String key)
+TZOZENDEF Json_Value json_object_value_by_key(Json_Object object, Tzozen_Str key)
 {
     FOR_JSON (Json_Object, element, object) {
         if (string_equal(element->key, key)) {

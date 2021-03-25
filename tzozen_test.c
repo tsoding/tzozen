@@ -115,7 +115,7 @@ int main()
 
         printf("%s\n", json_filepath);
 
-        String source = read_file_as_string(json_filepath);
+        Tzozen_Str source = read_file_as_string(json_filepath);
         Json_Result result = parse_json_value(&memory, source);
         if (result.is_error) {
             print_json_error(stderr, result, source, json_filepath);

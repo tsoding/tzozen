@@ -12,7 +12,7 @@ int main()
     memory.size = 0;
     memory.buffer = memory_buffer;
 
-    String input =
+    Tzozen_Str input =
         SLT("{\n"
             "   \"null\": null,\n"
             "   \"boolean\": true,\n"

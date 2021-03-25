@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         snprintf(output_file_path, ARRAY_SIZE(output_file_path), "%s."DUMP_ARCH_SUFFIX".bin", input_file_path);
     }
 
-    String input = read_file_as_string(input_file_path);
+    Tzozen_Str input = read_file_as_string(input_file_path);
 
     Json_Value *index = memory_alloc(&memory, sizeof(Json_Value));
 

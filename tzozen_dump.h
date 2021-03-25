@@ -51,7 +51,7 @@
 void json_value_relatify(Memory *memory, Json_Value *value);
 void json_value_unrelatify(Memory *memory, Json_Value *index);
 
-void string_relatify(Memory *memory, String *string)
+void string_relatify(Memory *memory, Tzozen_Str *string)
 {
     assert((const char *) memory->buffer <= string->data);
     RELATIFY_PTR(memory, string->data);
@@ -170,7 +170,7 @@ fail:
     exit(1);
 }
 
-void string_unrelatify(Memory *memory, String *string)
+void string_unrelatify(Memory *memory, Tzozen_Str *string)
 {
     UNRELATIFY_PTR(memory, string->data);
 }
@@ -237,7 +237,7 @@ void json_value_unrelatify(Memory *memory, Json_Value *index)
     }
 }
 
-String read_file_as_string(const char *filepath)
+Tzozen_Str read_file_as_string(const char *filepath)
 {
     FILE *f = fopen(filepath, "rb");
     if (f == NULL) goto fail;
@@ -254,7 +254,7 @@ String read_file_as_string(const char *filepath)
     assert(n == (size_t) m);
 
     fclose(f);
-    return string(n, buffer);
+    return (Tzozen_Str) { n, buffer };
 fail:
     fprintf(stderr, "Could not read file `%s`: %s\n",
             filepath, strerror(errno));
