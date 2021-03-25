@@ -13,7 +13,7 @@ int main()
     memory.buffer = memory_buffer;
 
     Tzozen_Str input =
-        SLT("{\n"
+        TSTR("{\n"
             "   \"null\": null,\n"
             "   \"boolean\": true,\n"
             "   \"boolean\": false,\n"

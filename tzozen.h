@@ -56,7 +56,7 @@ typedef struct  {
     const char *data;
 } Tzozen_Str;
 
-#define SLT(literal) tzozen_str(sizeof(literal) - 1, literal)
+#define TSTR(literal) tzozen_str(sizeof(literal) - 1, literal)
 
 TZOZENDEF Tzozen_Str tzozen_str(size_t len, const char *data);
 TZOZENDEF void tzozen_str_chop(Tzozen_Str *s, size_t n);
@@ -260,7 +260,7 @@ TZOZENDEF Tzozen_Str tzozen_str_take(Tzozen_Str s, size_t n)
 
 TZOZENDEF Tzozen_Str tzozen_str_drop(Tzozen_Str s, size_t n)
 {
-    if (s.len < n) return SLT("");
+    if (s.len < n) return TSTR("");
     Tzozen_Str result = {
         s.len - n,
         s.data + n
@@ -546,9 +546,9 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, Tzozen_Str source)
 
     // TODO: empty integer with fraction is not taken into account
     if (integer.len == 0
-        || tzozen_str_equal(integer, SLT("-"))
+        || tzozen_str_equal(integer, TSTR("-"))
         || (integer.len > 1 && *integer.data == '0')
-        || (integer.len > 2 && tzozen_str_prefix_of(SLT("-0"), integer))) {
+        || (integer.len > 2 && tzozen_str_prefix_of(TSTR("-0"), integer))) {
         return result_failure(source, "Incorrect number literal");
     }
 
@@ -582,8 +582,8 @@ TZOZENDEF Json_Result parse_json_number(Memory *memory, Tzozen_Str source)
         }
 
         if (exponent.len == 0 ||
-            tzozen_str_equal(exponent, SLT("-")) ||
-            tzozen_str_equal(exponent, SLT("+"))) {
+            tzozen_str_equal(exponent, TSTR("-")) ||
+            tzozen_str_equal(exponent, TSTR("+"))) {
             return result_failure(source, "Incorrect number literal");
         }
     }
@@ -943,9 +943,9 @@ TZOZENDEF Json_Result parse_json_value_with_depth(Memory *memory, Tzozen_Str sou
     }
 
     switch (*source.data) {
-    case 'n': return parse_token(source, SLT("null"), json_null(), "Expected `null`");
-    case 't': return parse_token(source, SLT("true"), json_true(), "Expected `true`");
-    case 'f': return parse_token(source, SLT("false"), json_false(), "Expected `false`");
+    case 'n': return parse_token(source, TSTR("null"), json_null(), "Expected `null`");
+    case 't': return parse_token(source, TSTR("true"), json_true(), "Expected `true`");
+    case 'f': return parse_token(source, TSTR("false"), json_false(), "Expected `false`");
     case '"': return parse_json_string(memory, source);
     case '[': return parse_json_array(memory, source, level);
     case '{': return parse_json_object(memory, source, level);
