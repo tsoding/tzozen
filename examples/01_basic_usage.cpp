@@ -7,7 +7,7 @@ static uint8_t memory_buffer[MEMORY_CAPACITY];
 
 int main()
 {
-    Memory memory;
+    Tzozen_Memory memory;
     memory.capacity = MEMORY_CAPACITY;
     memory.size = 0;
     memory.buffer = memory_buffer;

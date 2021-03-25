@@ -11,13 +11,13 @@
 #define TESTING_FOLDER "./tests/"
 
 uint8_t memory_buffer[100 * 1000 * 1000];
-Memory memory = {
+Tzozen_Memory memory = {
     .capacity = ARRAY_SIZE(memory_buffer),
     .buffer = memory_buffer,
 };
 
 uint8_t dump_memory_buffer[ARRAY_SIZE(memory_buffer)];
-Memory dump_memory = {
+Tzozen_Memory dump_memory = {
     .capacity = ARRAY_SIZE(dump_memory_buffer),
     .buffer = dump_memory_buffer,
 };

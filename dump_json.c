@@ -7,7 +7,7 @@
 
 #define MEMORY_CAPACITY (100 * 1000 * 1000)
 uint8_t memory_buffer[MEMORY_CAPACITY];
-Memory memory = {
+Tzozen_Memory memory = {
     .capacity = MEMORY_CAPACITY,
     .buffer = memory_buffer,
 };

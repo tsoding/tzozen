@@ -10,7 +10,7 @@
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 
 uint8_t memory_buffer[MEMORY_CAPACITY];
-Memory memory = {
+Tzozen_Memory memory = {
     .capacity = MEMORY_CAPACITY,
     .buffer = memory_buffer,
 };

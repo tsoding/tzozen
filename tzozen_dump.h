@@ -48,23 +48,23 @@
         }                                                               \
     } while(0)
 
-void json_value_relatify(Memory *memory, Json_Value *value);
-void json_value_unrelatify(Memory *memory, Json_Value *index);
+void json_value_relatify(Tzozen_Memory *memory, Json_Value *value);
+void json_value_unrelatify(Tzozen_Memory *memory, Json_Value *index);
 
-void string_relatify(Memory *memory, Tzozen_Str *string)
+void string_relatify(Tzozen_Memory *memory, Tzozen_Str *string)
 {
     assert((const char *) memory->buffer <= string->data);
     RELATIFY_PTR(memory, string->data);
 }
 
-void json_number_relatify(Memory *memory, Json_Number *number)
+void json_number_relatify(Tzozen_Memory *memory, Json_Number *number)
 {
     string_relatify(memory, &number->integer);
     string_relatify(memory, &number->fraction);
     string_relatify(memory, &number->exponent);
 }
 
-void json_array_elem_relatify(Memory *memory, Json_Array_Elem *elem)
+void json_array_elem_relatify(Tzozen_Memory *memory, Json_Array_Elem *elem)
 {
     while (elem != NULL) {
         void *saved_next = elem->next;
@@ -74,14 +74,14 @@ void json_array_elem_relatify(Memory *memory, Json_Array_Elem *elem)
     }
 }
 
-void json_array_relatify(Memory *memory, Json_Array *array)
+void json_array_relatify(Tzozen_Memory *memory, Json_Array *array)
 {
     json_array_elem_relatify(memory, array->begin);
     RELATIFY_PTR(memory, array->begin);
     RELATIFY_PTR(memory, array->end);
 }
 
-void json_object_elem_relatify(Memory *memory, Json_Object_Elem *elem)
+void json_object_elem_relatify(Tzozen_Memory *memory, Json_Object_Elem *elem)
 {
     while (elem != NULL) {
         void *saved_next = elem->next;
@@ -92,14 +92,14 @@ void json_object_elem_relatify(Memory *memory, Json_Object_Elem *elem)
     }
 }
 
-void json_object_relatify(Memory *memory, Json_Object *object)
+void json_object_relatify(Tzozen_Memory *memory, Json_Object *object)
 {
     json_object_elem_relatify(memory, object->begin);
     RELATIFY_PTR(memory, object->begin);
     RELATIFY_PTR(memory, object->end);
 }
 
-void json_value_relatify(Memory *memory, Json_Value *value)
+void json_value_relatify(Tzozen_Memory *memory, Json_Value *value)
 {
     switch (value->type) {
     case JSON_NULL:
@@ -121,7 +121,7 @@ void json_value_relatify(Memory *memory, Json_Value *value)
 }
 
 // TODO: dump_memory_to_file should probably relatify automatically
-void dump_memory_to_file(Memory *memory, const char *file_path)
+void dump_memory_to_file(Tzozen_Memory *memory, const char *file_path)
 {
     FILE *file = fopen(file_path, "wb");
     if (!file) {
@@ -141,7 +141,7 @@ void dump_memory_to_file(Memory *memory, const char *file_path)
 }
 
 // TODO: load_memory_from_file should probably unrelatify automatically
-void load_memory_from_file(Memory *memory, const char *file_path)
+void load_memory_from_file(Tzozen_Memory *memory, const char *file_path)
 {
     FILE *file = fopen(file_path, "rb");
     if (!file) goto fail;
@@ -170,19 +170,19 @@ fail:
     exit(1);
 }
 
-void string_unrelatify(Memory *memory, Tzozen_Str *string)
+void string_unrelatify(Tzozen_Memory *memory, Tzozen_Str *string)
 {
     UNRELATIFY_PTR(memory, string->data);
 }
 
-void json_number_unrelatify(Memory *memory, Json_Number *number)
+void json_number_unrelatify(Tzozen_Memory *memory, Json_Number *number)
 {
     string_unrelatify(memory, &number->integer);
     string_unrelatify(memory, &number->fraction);
     string_unrelatify(memory, &number->exponent);
 }
 
-void json_array_elem_unrelatify(Memory *memory, Json_Array_Elem *elem)
+void json_array_elem_unrelatify(Tzozen_Memory *memory, Json_Array_Elem *elem)
 {
     while (elem != NULL) {
         json_value_unrelatify(memory, &elem->value);
@@ -191,14 +191,14 @@ void json_array_elem_unrelatify(Memory *memory, Json_Array_Elem *elem)
     }
 }
 
-void json_array_unrelatify(Memory *memory, Json_Array *array)
+void json_array_unrelatify(Tzozen_Memory *memory, Json_Array *array)
 {
     UNRELATIFY_PTR(memory, array->begin);
     UNRELATIFY_PTR(memory, array->end);
     json_array_elem_unrelatify(memory, array->begin);
 }
 
-void json_object_elem_unrelatify(Memory *memory, Json_Object_Elem *elem)
+void json_object_elem_unrelatify(Tzozen_Memory *memory, Json_Object_Elem *elem)
 {
     while (elem != NULL) {
         string_unrelatify(memory, &elem->key);
@@ -209,14 +209,14 @@ void json_object_elem_unrelatify(Memory *memory, Json_Object_Elem *elem)
     }
 }
 
-void json_object_unrelatify(Memory *memory, Json_Object *object)
+void json_object_unrelatify(Tzozen_Memory *memory, Json_Object *object)
 {
     UNRELATIFY_PTR(memory, object->begin);
     UNRELATIFY_PTR(memory, object->end);
     json_object_elem_unrelatify(memory, object->begin);
 }
 
-void json_value_unrelatify(Memory *memory, Json_Value *index)
+void json_value_unrelatify(Tzozen_Memory *memory, Json_Value *index)
 {
     switch (index->type) {
     case JSON_NULL:
