@@ -56,7 +56,7 @@ typedef struct  {
     const char *data;
 } Tzozen_Str;
 
-#define SLT(literal) tzozen_str(sizeof(literal), literal)
+#define SLT(literal) tzozen_str(sizeof(literal) - 1, literal)
 
 TZOZENDEF Tzozen_Str tzozen_str(size_t len, const char *data);
 TZOZENDEF void tzozen_str_chop(Tzozen_Str *s, size_t n);
