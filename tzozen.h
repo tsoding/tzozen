@@ -38,6 +38,8 @@ typedef struct {
     uint8_t *buffer;
 } Tzozen_Memory;
 
+TZOZENDEF Tzozen_Memory tzozen_memory(uint8_t *buffer, size_t capacity);
+
 TZOZENDEF void *memory_alloc(Tzozen_Memory *memory, size_t size);
 
 #define UTF8_CHUNK_CAPACITY 4
@@ -195,6 +197,15 @@ TZOZENDEF void print_json_error(FILE *stream, Json_Result result, Tzozen_Str sou
 
 #ifdef TZOZEN_IMPLEMENTATION
 // TODO: port https://github.com/tsoding/skedudle/pull/74 when it's merged
+
+TZOZENDEF Tzozen_Memory tzozen_memory(uint8_t *buffer, size_t capacity)
+{
+    Tzozen_Memory memory;
+    memset(&memory, 0, sizeof(memory));
+    memory.buffer = buffer;
+    memory.capacity = capacity;
+    return memory;
+}
 
 TZOZENDEF void *memory_alloc(Tzozen_Memory *memory, size_t size)
 {
