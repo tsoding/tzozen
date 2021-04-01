@@ -808,6 +808,9 @@ TZOZENDEF Json_Result parse_escape_sequence(Tzozen_Memory *memory, Tzozen_Str so
     assert(utf8_chunk.size > 0);
 
     char *data = (char *) memory_alloc(memory, utf8_chunk.size);
+    if (data == NULL) {
+        return result_failure(source, "Out of memory");
+    }
     memcpy(data, utf8_chunk.buffer, utf8_chunk.size);
 
     Tzozen_Str s = {utf8_chunk.size, data};
@@ -825,6 +828,9 @@ TZOZENDEF Json_Result parse_json_string(Tzozen_Memory *memory, Tzozen_Str source
     Tzozen_Str rest = result.rest;
 
     char *buffer = (char *)memory_alloc(memory, buffer_capacity);
+    if (buffer == NULL) {
+        return result_failure(source, "Out of memory");
+    }
     size_t buffer_size = 0;
 
     while (source.len) {
