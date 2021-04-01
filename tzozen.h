@@ -66,7 +66,7 @@ TZOZENDEF Tzozen_Str tzozen_str_drop(Tzozen_Str s, size_t n);
 TZOZENDEF int tzozen_str_prefix_of(Tzozen_Str prefix, Tzozen_Str s);
 TZOZENDEF Tzozen_Str tzozen_str_trim_begin(Tzozen_Str s);
 TZOZENDEF int64_t tzozen_str_stoi64(Tzozen_Str integer);
-TZOZENDEF Tzozen_Str tzozen_str_clone(Tzozen_Memory *memory, Tzozen_Str string);
+TZOZENDEF int tzozen_str_clone(Tzozen_Memory *memory, Tzozen_Str string, Tzozen_Str *clone);
 
 TZOZENDEF int32_t json_unhex(char x);
 TZOZENDEF int json_isspace(char c);
@@ -97,7 +97,7 @@ typedef struct {
 } Json_Array;
 
 TZOZENDEF size_t json_array_size(Json_Array array);
-TZOZENDEF void json_array_push(Tzozen_Memory *memory, Json_Array *array, Json_Value value);
+TZOZENDEF int json_array_push(Tzozen_Memory *memory, Json_Array *array, Json_Value value);
 
 typedef struct Json_Object_Elem Json_Object_Elem;
 
@@ -107,7 +107,7 @@ typedef struct {
 } Json_Object;
 
 TZOZENDEF size_t json_object_size(Json_Object object);
-TZOZENDEF void json_object_push(Tzozen_Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value);
+TZOZENDEF int json_object_push(Tzozen_Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value);
 TZOZENDEF Json_Value json_object_value_by_key(Json_Object object, Tzozen_Str key);
 
 typedef struct {
@@ -199,7 +199,10 @@ TZOZENDEF void print_json_error(FILE *stream, Json_Result result, Tzozen_Str sou
 TZOZENDEF void *memory_alloc(Tzozen_Memory *memory, size_t size)
 {
     assert(memory);
-    assert(memory->size + size <= memory->capacity);
+    
+    if (memory->size + size > memory->capacity) {
+        return NULL;
+    }
 
     void *result = memory->buffer + memory->size;
     memory->size += size;
@@ -398,9 +401,13 @@ TZOZENDEF Tzozen_Str tzozen_str_trim_begin(Tzozen_Str s)
     return s;
 }
 
-TZOZENDEF void json_array_push(Tzozen_Memory *memory, Json_Array *array, Json_Value value)
+TZOZENDEF int json_array_push(Tzozen_Memory *memory, Json_Array *array, Json_Value value)
 {
     Json_Array_Elem *next = (Json_Array_Elem *) memory_alloc(memory, sizeof(Json_Array_Elem));
+    if (next == NULL) {
+        return -1;
+    }
+
     memset(next, 0, sizeof(Json_Array_Elem));
     next->value = value;
 
@@ -413,11 +420,16 @@ TZOZENDEF void json_array_push(Tzozen_Memory *memory, Json_Array *array, Json_Va
     }
 
     array->end = next;
+
+    return 0;
 }
 
-TZOZENDEF void json_object_push(Tzozen_Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value)
+TZOZENDEF int json_object_push(Tzozen_Memory *memory, Json_Object *object, Tzozen_Str key, Json_Value value)
 {
     Json_Object_Elem *next = (Json_Object_Elem *) memory_alloc(memory, sizeof(Json_Object_Elem));
+    if (next == NULL) {
+        return -1;
+    }
     memset(next, 0, sizeof(Json_Object_Elem));
     next->key = key;
     next->value = value;
@@ -431,6 +443,7 @@ TZOZENDEF void json_object_push(Tzozen_Memory *memory, Json_Object *object, Tzoz
     }
 
     object->end = next;
+    return 0;
 }
 
 TZOZENDEF int64_t tzozen_str_stoi64(Tzozen_Str integer)
@@ -516,12 +529,19 @@ TZOZENDEF Json_Result parse_token(Tzozen_Str source, Tzozen_Str token,
     return result_failure(source, message);
 }
 
-TZOZENDEF Tzozen_Str tzozen_str_clone(Tzozen_Memory *memory, Tzozen_Str string)
+TZOZENDEF int tzozen_str_clone(Tzozen_Memory *memory, Tzozen_Str string, Tzozen_Str *clone)
 {
     char *clone_data = (char *)memory_alloc(memory, string.len);
-    Tzozen_Str clone = { string.len, clone_data};
+    if (clone_data == NULL) {
+        return -1;
+    }
+
     memcpy(clone_data, string.data, string.len);
-    return clone;
+
+    clone->len = string.len;
+    clone->data = clone_data;
+
+    return 0;
 }
 
 TZOZENDEF Json_Result parse_json_number(Tzozen_Memory *memory, Tzozen_Str source)
@@ -586,12 +606,27 @@ TZOZENDEF Json_Result parse_json_number(Tzozen_Memory *memory, Tzozen_Str source
         }
     }
 
+    Tzozen_Str integer_clone = {0, NULL};
+    if (tzozen_str_clone(memory, integer, &integer_clone) < 0){
+        return result_failure(source, "Out of memory");
+    }
+
+    Tzozen_Str fraction_clone = {0, NULL};
+    if (tzozen_str_clone(memory, fraction, &fraction_clone) < 0){
+        return result_failure(source, "Out of memory");
+    }
+
+    Tzozen_Str exponent_clone = {0, NULL};
+    if (tzozen_str_clone(memory, exponent, &exponent_clone) < 0){
+        return result_failure(source, "Out of memory");
+    }
+
     return result_success(
         source,
         json_number(
-            tzozen_str_clone(memory, integer),
-            tzozen_str_clone(memory, fraction),
-            tzozen_str_clone(memory, exponent)));
+            integer_clone,
+            fraction_clone,
+            exponent_clone));
 }
 
 TZOZENDEF Json_Result parse_json_string_literal(Tzozen_Str source)
@@ -843,7 +878,9 @@ TZOZENDEF Json_Result parse_json_array(Tzozen_Memory *memory, Tzozen_Str source,
             return item_result;
         }
 
-        json_array_push(memory, &array, item_result.value);
+        if (json_array_push(memory, &array, item_result.value) < 0) {
+            return result_failure(source, "Out of memory");
+        }
 
         source = tzozen_str_trim_begin(item_result.rest);
 
@@ -908,7 +945,9 @@ TZOZENDEF Json_Result parse_json_object(Tzozen_Memory *memory, Tzozen_Str source
         source = tzozen_str_trim_begin(value_result.rest);
 
         assert(key_result.value.type == JSON_STRING);
-        json_object_push(memory, &object, key_result.value.string, value_result.value);
+        if (json_object_push(memory, &object, key_result.value.string, value_result.value) < 0) {
+            return result_failure(source, "Out of memory");
+        }
 
         if (source.len == 0) {
             return result_failure(source, "Expected '}' or ','");
